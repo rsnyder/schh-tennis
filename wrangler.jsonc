@@ -1,0 +1,21 @@
+{
+  "name": "schh-tennis",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-08-01",
+  "kv_namespaces": [
+    {
+      "binding": "COURT_CACHE",
+      "id": "faab90773def4eccb5039f963c15a563"
+    }
+  ],
+  "vars": {
+    "DEBUG": "false"
+  },
+  // Cron hours are UTC. This covers ~7am-9pm America/New_York year-round:
+  // during EDT (UTC-4) that's 11:00-23:00 UTC; the second entry (0-1 UTC)
+  // covers the tail end of the ET evening (7-9pm EST / 8-10pm EDT edge cases
+  // around the DST boundary).
+  "triggers": {
+    "crons": ["*/15 11-23 * * *", "0,15,30,45 0-1 * * *"]
+  }
+}

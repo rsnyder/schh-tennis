@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+
+# Captured fixtures contain real member names — regenerate locally with:
+#   node --env-file=.dev.vars scripts/capture-fixture.mjs
+test/fixtures/*.html
