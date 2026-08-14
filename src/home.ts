@@ -190,17 +190,25 @@ export const HOME_HTML = `<!doctype html>
     height: auto;
     border-radius: 8px;
   }
-  .club-date {
+  .conditions-card p.club-date {
     margin: 0 0 8px;
     font-weight: 700;
     color: var(--green-dark);
     font-size: 0.95rem;
   }
-  .club-condition {
-    margin: 0 0 6px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    line-height: 1.45;
+  .conditions-card p.club-status {
+    margin: 12px 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .conditions-card p.club-note {
+    margin: 18px 0 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--muted);
   }
   .club-card { padding-top: 4px; }
   .club-para {
@@ -305,6 +313,10 @@ export const HOME_HTML = `<!doctype html>
     <span class="tab-icon" aria-hidden="true">&#127934;</span>
     <span class="tab-label">Reserve <span class="tab-ext">&#8599;</span></span>
   </a>
+  <a class="tab-item" href="/more">
+    <span class="tab-icon" aria-hidden="true">&#8943;</span>
+    <span class="tab-label">More</span>
+  </a>
 </nav>
 <footer>Chelsea SCHH &middot; unofficial court sheet viewer</footer>
 <script>
@@ -395,6 +407,13 @@ export const HOME_HTML = `<!doctype html>
     conditionsCardEl.innerHTML = html;
   }
 
+  // Court status lines ("South and North Courts are Open") get the prominent
+  // treatment; other card lines (the check-in note) are supporting text.
+  function isStatusLine(p) {
+    var t = String(p).replace(/<[^>]+>/g, "");
+    return /courts?\\b/i.test(t) && /(open|clos)/i.test(t);
+  }
+
   // Heuristic: the document opens with a date line followed by the day's
   // court conditions; announcements follow. The first paragraph that is
   // ALL-CAPS-ish (a shouted headline like "RATINGS CLINIC") marks the switch.
@@ -424,7 +443,7 @@ export const HOME_HTML = `<!doctype html>
     } else {
       if (paragraphs[0]) card += '<p class="club-date">' + paragraphs[0] + "</p>";
       for (var c = 1; c < splitAt; c++) {
-        card += '<p class="club-condition">' + paragraphs[c] + "</p>";
+        card += '<p class="' + (isStatusLine(paragraphs[c]) ? "club-status" : "club-note") + '">' + paragraphs[c] + "</p>";
       }
     }
     conditionsCardEl.innerHTML = card;

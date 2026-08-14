@@ -130,6 +130,17 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     background: var(--bg-alt);
   }
   .tcell .ampm { font-size: 0.42em; font-weight: 600; color: var(--muted); margin-top: 0.2vh; letter-spacing: 0.05em; }
+  /* current-time row band */
+  .tcell.now {
+    background: var(--green);
+    color: #08120b;
+  }
+  .tcell.now .ampm { color: #08120b; opacity: 0.75; }
+  .cell.now {
+    border-top: 2px solid var(--green);
+    border-bottom: 2px solid var(--green);
+  }
+  .cell-open.now { opacity: 0.6; }
   .cell {
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -533,12 +544,13 @@ export const SIGNAGE_HTML: string = `<!doctype html>
 
   // ---- cell / grid rendering ----
 
-  function cellHtml(cell) {
-    if (cell == null) return '<div class="cell cell-null"></div>';
-    if (!cell.reserved) return '<div class="cell cell-open">&middot;</div>';
+  function cellHtml(cell, extraClass) {
+    var x = extraClass || "";
+    if (cell == null) return '<div class="cell cell-null' + x + '"></div>';
+    if (!cell.reserved) return '<div class="cell cell-open' + x + '">&middot;</div>';
     var players = cell.players || [];
     if (isBlockBooking(players)) {
-      return '<div class="cell cell-block"><span class="block-label">' + escapeHtml(blockLabel(players[0])) + "</span></div>";
+      return '<div class="cell cell-block' + x + '"><span class="block-label">' + escapeHtml(blockLabel(players[0])) + "</span></div>";
     }
     var hasEvent = false;
     for (var e = 0; e < players.length; e++) {
@@ -548,7 +560,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
       var inner = eventLines(players)
         .map(function (l) { return '<div class="event-line">' + escapeHtml(blockLabel(l)) + "</div>"; })
         .join("");
-      return '<div class="cell cell-event">' + inner + "</div>";
+      return '<div class="cell cell-event' + x + '">' + inner + "</div>";
     }
     var names = [];
     if (players.length > 0) {
@@ -558,7 +570,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     } else if (cell.text) {
       names.push(cell.text);
     }
-    return '<div class="cell cell-reserved"><div class="name-flow">' + escapeHtml(names.join(", ")) + "</div></div>";
+    return '<div class="cell cell-reserved' + x + '"><div class="name-flow">' + escapeHtml(names.join(", ")) + "</div></div>";
   }
 
   function buildGrid(facility, nowMin) {
@@ -576,17 +588,33 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     for (var c = 0; c < courts.length; c++) {
       html += '<div class="hcell">' + escapeHtml(shortCourtLabel(courts[c])) + "</div>";
     }
+    // Highlight the slot currently in play: the latest one that has started.
+    // (Only meaningful when the sheet being shown is today's.)
+    var nowIdx = -1;
+    if (isShowingToday()) {
+      for (var n = 0; n < slots.length; n++) {
+        var mins = slotMinutes(slots[n].time);
+        if (mins !== null && mins <= nowMin) nowIdx = n;
+      }
+    }
+
     for (var s = 0; s < slots.length; s++) {
       var slot = slots[s];
       var tp = splitTime(slot.time);
-      html += '<div class="tcell">' + escapeHtml(tp.hm) + '<span class="ampm">' + escapeHtml(tp.ap) + "</span></div>";
+      var now = s === nowIdx ? " now" : "";
+      html += '<div class="tcell' + now + '">' + escapeHtml(tp.hm) + '<span class="ampm">' + escapeHtml(tp.ap) + "</span></div>";
       var cells = slot.cells || [];
       for (var j = 0; j < courts.length; j++) {
-        html += cellHtml(cells[j]);
+        html += cellHtml(cells[j], now);
       }
     }
     html += "</div>";
     return html;
+  }
+
+  function isShowingToday() {
+    var shown = lastData && lastData.date ? lastData.date : null;
+    return !shown || shown === todayNYDateString();
   }
 
   function findFacility(name) {

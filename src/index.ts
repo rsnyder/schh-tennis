@@ -1,7 +1,9 @@
 import { getCourtSheet, getWelcome, refreshCourtSheet } from "./cache";
 import { fetchCourtSheetHtml } from "./chelsea";
 import { HOME_HTML } from "./home";
+import { ABOUT_HTML } from "./about";
 import { INSTALL_HTML } from "./install";
+import { MORE_HTML } from "./more";
 import { PAGE_HTML } from "./page";
 import {
   APPLE_TOUCH_ICON_B64,
@@ -58,6 +60,16 @@ export default {
 
       case "/tv":
         return new Response(SIGNAGE_HTML, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+        });
+
+      case "/more":
+        return new Response(MORE_HTML, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+        });
+
+      case "/about":
+        return new Response(ABOUT_HTML, {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
         });
 

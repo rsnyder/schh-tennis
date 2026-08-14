@@ -397,6 +397,10 @@ export const PAGE_HTML = `<!doctype html>
     <span class="tab-icon" aria-hidden="true">&#127934;</span>
     <span class="tab-label">Reserve <span class="tab-ext">&#8599;</span></span>
   </a>
+  <a class="tab-item" href="/more">
+    <span class="tab-icon" aria-hidden="true">&#8943;</span>
+    <span class="tab-label">More</span>
+  </a>
 </nav>
 <script>
 (function () {
