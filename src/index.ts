@@ -1,8 +1,24 @@
 import { getCourtSheet, refreshCourtSheet } from "./cache";
 import { fetchCourtSheetHtml } from "./chelsea";
+import { INSTALL_HTML } from "./install";
 import { PAGE_HTML } from "./page";
+import {
+  APPLE_TOUCH_ICON_B64,
+  ICON_192_B64,
+  ICON_512_B64,
+  ICON_MASKABLE_512_B64,
+  MANIFEST_JSON,
+  pngFromBase64,
+  SERVICE_WORKER_JS,
+} from "./pwa";
 import { SIGNAGE_HTML } from "./signage";
 import { ScrapeError } from "./types";
+
+function pngResponse(b64: string): Response {
+  return new Response(pngFromBase64(b64), {
+    headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" },
+  });
+}
 
 export interface Env {
   COURT_CACHE: KVNamespace;
@@ -24,6 +40,31 @@ export default {
         return new Response(SIGNAGE_HTML, {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
         });
+
+      case "/install":
+        return new Response(INSTALL_HTML, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+        });
+
+      case "/manifest.webmanifest":
+        return new Response(MANIFEST_JSON, {
+          headers: { "content-type": "application/manifest+json", "cache-control": "public, max-age=3600" },
+        });
+
+      case "/sw.js":
+        // no-cache so service worker updates roll out promptly
+        return new Response(SERVICE_WORKER_JS, {
+          headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-cache" },
+        });
+
+      case "/icons/icon-192.png":
+        return pngResponse(ICON_192_B64);
+      case "/icons/icon-512.png":
+        return pngResponse(ICON_512_B64);
+      case "/icons/icon-maskable-512.png":
+        return pngResponse(ICON_MASKABLE_512_B64);
+      case "/icons/apple-touch-icon.png":
+        return pngResponse(APPLE_TOUCH_ICON_B64);
 
       case "/api/courtsheet": {
         const dateParam = url.searchParams.get("date");

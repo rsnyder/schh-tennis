@@ -8,6 +8,13 @@ export const PAGE_HTML = `<!doctype html>
 <meta name="robots" content="noindex">
 <title>SCHH Tennis — Court Sheet</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎾</text></svg>">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1f5c2c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SCHH Tennis">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <style>
   :root {
     --green: #2f7a3d;
@@ -158,6 +165,34 @@ export const PAGE_HTML = `<!doctype html>
   main {
     padding: 4px 0 24px;
     min-height: 40vh;
+  }
+  .install-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 16px 0;
+    padding: 10px 12px;
+    background: var(--green);
+    border-radius: 12px;
+    color: #fff;
+    text-decoration: none;
+  }
+  .install-banner:active { background: var(--green-dark); }
+  .ib-icon { font-size: 1.6rem; flex: 0 0 auto; }
+  .ib-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+  .ib-text b { font-size: 0.92rem; }
+  .ib-sub { font-size: 0.76rem; opacity: 0.85; }
+  .ib-close {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
   }
   .status {
     padding: 40px 20px;
@@ -310,6 +345,11 @@ export const PAGE_HTML = `<!doctype html>
   </div>
   <div class="tabs" id="tabs" style="display:none"></div>
 </div>
+<a class="install-banner" id="installBanner" href="/install" style="display:none">
+  <span class="ib-icon">&#128242;</span>
+  <span class="ib-text"><b>Install this app on your phone</b><span class="ib-sub">Home-screen icon &middot; opens full screen &middot; free</span></span>
+  <button class="ib-close" id="installDismiss" type="button" aria-label="Dismiss">&times;</button>
+</a>
 <main id="main">
   <div class="status" id="status">Loading&hellip;</div>
   <div id="slotList"></div>
@@ -318,6 +358,28 @@ export const PAGE_HTML = `<!doctype html>
 <script>
 (function () {
   "use strict";
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+  }
+
+  // Install banner: prominent until dismissed, never shown once the app is
+  // actually installed (standalone display mode).
+  (function () {
+    var standalone =
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+    var dismissed = false;
+    try { dismissed = localStorage.getItem("schh-install-dismissed") === "1"; } catch (e) {}
+    var banner = document.getElementById("installBanner");
+    if (!standalone && !dismissed) banner.style.display = "flex";
+    document.getElementById("installDismiss").addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      try { localStorage.setItem("schh-install-dismissed", "1"); } catch (err) {}
+      banner.style.display = "none";
+    });
+  })();
 
   var REFRESH_MS = 5 * 60 * 1000;
   var STALE_MINUTES_CUTOFF = 90;
