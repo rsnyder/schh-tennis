@@ -124,6 +124,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     justify-content: center;
     font-weight: 700;
     font-size: var(--time-font);
+    padding: 0 0.6vw;
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     background: var(--bg-alt);
@@ -566,12 +567,11 @@ export const SIGNAGE_HTML: string = `<!doctype html>
       return '<div class="empty-msg">Play has ended for today</div>';
     }
     var courts = facility.courts || [];
-    // Wide grids (South's 12 courts) give the time column less width so the
-    // court columns get more.
-    var timePct = courts.length >= 8 ? 5.5 : 10;
-    var colTemplate = timePct + "% repeat(" + courts.length + ", 1fr)";
+    // The time column sizes to its content — a fixed percentage overflows
+    // into the first court column when few rows make the time font large.
+    var colTemplate = "max-content repeat(" + courts.length + ", 1fr)";
     var rowTemplate = "auto repeat(" + slots.length + ", 1fr)";
-    var html = '<div class="grid" data-rows="' + slots.length + '" data-cols="' + courts.length + '" data-timepct="' + timePct + '" style="grid-template-columns:' + colTemplate + ";grid-template-rows:" + rowTemplate + '">';
+    var html = '<div class="grid" data-rows="' + slots.length + '" data-cols="' + courts.length + '" style="grid-template-columns:' + colTemplate + ";grid-template-rows:" + rowTemplate + '">';
     html += '<div class="hcell">Time</div>';
     for (var c = 0; c < courts.length; c++) {
       html += '<div class="hcell">' + escapeHtml(shortCourtLabel(courts[c])) + "</div>";
@@ -648,8 +648,12 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     var widthBasedMax = Infinity;
     for (var g = 0; g < grids.length; g++) {
       var cols = parseInt(grids[g].getAttribute("data-cols"), 10) || 1;
-      var timePct = parseFloat(grids[g].getAttribute("data-timepct")) || 10;
-      var colWidthPx = (grids[g].clientWidth * (1 - timePct / 100)) / cols - 18;
+      // Measure a real court cell (the time column is content-sized, so its
+      // width varies with the time font); fall back to an estimate pre-layout.
+      var sample = grids[g].querySelector(".cell");
+      var colWidthPx = sample
+        ? sample.clientWidth - 6
+        : (grids[g].clientWidth * 0.9) / cols - 18;
       var wordMax = colWidthPx / (maxWordChars * 0.58);
       // Area fit: lines(font) = ceil(chars*0.58*font / colWidth), need
       // lines * 1.15 * font <= 0.85 * rowHeight  =>  solve approximately.
