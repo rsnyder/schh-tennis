@@ -126,7 +126,7 @@ export const INSTALL_HTML = `<!doctype html>
   <h2>iPhone &amp; iPad (Safari)<span class="your-device" id="iosBadge" style="display:none">Your device</span></h2>
   <ol>
     <li>Open this page in <b>Safari</b> (installing doesn't work from Chrome or other browsers on iPhone).</li>
-    <li>Tap the <b>Share</b> button <span class="keycap">&#x2BAD;</span> — the square with an arrow, at the bottom center of the screen.</li>
+    <li>Tap the <b>&#8943;</b> three-dot button at the bottom of the screen, then tap <b>Share</b> (the square with an arrow). On iPhones with the older Safari layout, the Share button sits directly at the bottom center instead.</li>
     <li>Scroll down the share menu and tap <b>Add to Home Screen</b>.</li>
     <li>Tap <b>Add</b> in the top-right corner.</li>
   </ol>
