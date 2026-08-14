@@ -332,7 +332,10 @@ export const PAGE_HTML = `<!doctype html>
 
   function load() {
     renderLoading();
-    fetch("/api/courtsheet", { cache: "no-store" })
+    var dateParam = new URLSearchParams(window.location.search).get("date");
+    var apiUrl = "/api/courtsheet" +
+      (dateParam && /^\\d{4}-\\d{2}-\\d{2}$/.test(dateParam) ? "?date=" + encodeURIComponent(dateParam) : "");
+    fetch(apiUrl, { cache: "no-store" })
       .then(function (res) {
         return res.json().then(function (data) {
           return { ok: res.ok, data: data };

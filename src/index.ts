@@ -1,6 +1,7 @@
 import { getCourtSheet, refreshCourtSheet } from "./cache";
 import { fetchCourtSheetHtml } from "./chelsea";
 import { PAGE_HTML } from "./page";
+import { SIGNAGE_HTML } from "./signage";
 import { ScrapeError } from "./types";
 
 export interface Env {
@@ -19,12 +20,25 @@ export default {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
         });
 
+      case "/tv":
+        return new Response(SIGNAGE_HTML, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+        });
+
       case "/api/courtsheet": {
-        const result = await getCourtSheet(env, ctx);
+        const dateParam = url.searchParams.get("date");
+        if (dateParam !== null && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+          return Response.json(
+            { error: "BAD_DATE", message: "date must be YYYY-MM-DD" },
+            { status: 400, headers: { "cache-control": "no-store" } },
+          );
+        }
+        const result = await getCourtSheet(env, ctx, dateParam ?? undefined);
         if (result.data === null && result.error) {
+          const status = result.error === "DATE_UNAVAILABLE" ? 404 : 502;
           return Response.json(
             { error: result.error, stale: false },
-            { status: 502, headers: { "cache-control": "no-store" } },
+            { status, headers: { "cache-control": "no-store" } },
           );
         }
         return Response.json(

@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   CookieJar,
   extractHiddenField,
+  extractPlaydateOptions,
   extractSelectedPlaydate,
   parseSetCookie,
+  playdateOptionToISO,
   type CookieSource,
 } from "../src/chelsea";
 
@@ -230,5 +232,36 @@ describe("CookieJar", () => {
     const jar = new CookieJar();
     expect(jar.get("nope")).toBeUndefined();
     expect(jar.has("nope")).toBe(false);
+  });
+});
+
+describe("playdate options", () => {
+  const selectHtml =
+    '<select name="ddlPlaydate" id="ddlPlaydate">' +
+    '<option selected="selected" value="August 12, 2026 - Wednesday">August 12, 2026 - Wednesday</option>' +
+    '<option value="August 13, 2026 - Thursday">August 13, 2026 - Thursday</option>' +
+    '<option value="August 14, 2026 - Friday">August 14, 2026 - Friday</option>' +
+    "</select>";
+
+  it("extracts all option values", () => {
+    expect(extractPlaydateOptions(selectHtml)).toEqual([
+      "August 12, 2026 - Wednesday",
+      "August 13, 2026 - Thursday",
+      "August 14, 2026 - Friday",
+    ]);
+  });
+
+  it("returns [] when the select is missing", () => {
+    expect(extractPlaydateOptions("<html></html>")).toEqual([]);
+  });
+
+  it("converts option labels to ISO dates", () => {
+    expect(playdateOptionToISO("August 13, 2026 - Thursday")).toBe("2026-08-13");
+    expect(playdateOptionToISO("January 2, 2027 - Saturday")).toBe("2027-01-02");
+  });
+
+  it("returns null for unparseable labels", () => {
+    expect(playdateOptionToISO("not a date")).toBeNull();
+    expect(playdateOptionToISO("Wharrgarbl 5, 2026")).toBeNull();
   });
 });

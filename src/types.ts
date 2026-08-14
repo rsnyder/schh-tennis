@@ -1,4 +1,9 @@
-export type ScrapeErrorCode = "SITE_DOWN" | "LOGIN_FAILED" | "SESSION_REJECTED" | "PARSE_FAILED";
+export type ScrapeErrorCode =
+  | "SITE_DOWN"
+  | "LOGIN_FAILED"
+  | "SESSION_REJECTED"
+  | "PARSE_FAILED"
+  | "DATE_UNAVAILABLE";
 
 export class ScrapeError extends Error {
   constructor(public code: ScrapeErrorCode, message: string) {

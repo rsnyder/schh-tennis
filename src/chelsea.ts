@@ -124,6 +124,30 @@ export function extractSelectedPlaydate(html: string): string | null {
   return match ? decodeEntities(match[1]) : null;
 }
 
+const OPTION_VALUE_RE = /<option\b[^>]*\bvalue\s*=\s*"([^"]*)"/gi;
+const MONTHS: Record<string, number> = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+};
+
+/** All `ddlPlaydate` option values, e.g. `["August 12, 2026 - Wednesday", ...]`. */
+export function extractPlaydateOptions(html: string): string[] {
+  const select = /<select\b[^>]*\bname\s*=\s*"ddlPlaydate"[^>]*>([\s\S]*?)<\/select>/i.exec(html);
+  if (!select) return [];
+  const values: string[] = [];
+  for (const m of select[1].matchAll(OPTION_VALUE_RE)) values.push(decodeEntities(m[1]));
+  return values;
+}
+
+/** Converts a playdate option label ("August 13, 2026 - Thursday") to "2026-08-13". */
+export function playdateOptionToISO(label: string): string | null {
+  const m = /^\s*([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(label);
+  if (!m) return null;
+  const month = MONTHS[m[1].toLowerCase()];
+  if (!month) return null;
+  return `${m[3]}-${String(month).padStart(2, "0")}-${String(parseInt(m[2], 10)).padStart(2, "0")}`;
+}
+
 /** Reports whether an `<input name="...">` (of any type) exists in `html`. */
 function hasNamedField(html: string, name: string): boolean {
   for (const match of html.matchAll(INPUT_TAG_RE)) {
@@ -260,7 +284,10 @@ function baseHeaders(jar: CookieJar, referer?: string): Record<string, string> {
  *  - `LOGIN_FAILED` — the site bounced us back to the login form
  *  - `SESSION_REJECTED` — logged in, but the court sheet redirected to login
  */
-export async function fetchCourtSheetHtml(credentials: ChelseaCredentials): Promise<string> {
+export async function fetchCourtSheetHtml(
+  credentials: ChelseaCredentials,
+  targetDateISO?: string,
+): Promise<string> {
   const jar = new CookieJar();
   const loginUrl = `${CHELSEA_BASE_URL}${LOGIN_PATH}`;
 
@@ -379,9 +406,22 @@ export async function fetchCourtSheetHtml(credentials: ChelseaCredentials): Prom
     if (value !== null) displayBody.set(field, value);
   }
 
-  const playDate = extractSelectedPlaydate(selectionHtml);
-  if (playDate === null) {
-    throw new ScrapeError("PARSE_FAILED", "no selected ddlPlaydate option found");
+  let playDate: string | null;
+  if (targetDateISO) {
+    const options = extractPlaydateOptions(selectionHtml);
+    playDate = options.find((o) => playdateOptionToISO(o) === targetDateISO) ?? null;
+    if (playDate === null) {
+      const available = options.map(playdateOptionToISO).filter(Boolean).join(", ");
+      throw new ScrapeError(
+        "DATE_UNAVAILABLE",
+        `date ${targetDateISO} is not offered; available: ${available || "(none found)"}`,
+      );
+    }
+  } else {
+    playDate = extractSelectedPlaydate(selectionHtml);
+    if (playDate === null) {
+      throw new ScrapeError("PARSE_FAILED", "no selected ddlPlaydate option found");
+    }
   }
   displayBody.set("ddlPlaydate", playDate);
 

@@ -31,27 +31,34 @@ function errorCode(error: unknown): string {
   return "SITE_DOWN";
 }
 
-/** Scrapes the live court sheet, parses it, and writes it to KV. */
-export async function refreshCourtSheet(env: Env): Promise<CourtSheet> {
-  const html = await fetchCourtSheetHtml({
-    member: env.CHELSEA_MEMBER,
-    password: env.CHELSEA_PASSWORD,
-  });
-  const dateISO = todayInNewYork();
-  const sheet = parseCourtSheet(html, dateISO, new Date().toISOString());
-  await env.COURT_CACHE.put(kvKey(dateISO), JSON.stringify(sheet), {
+/** Scrapes the live court sheet for `dateISO` (default: today), parses it, and writes it to KV. */
+export async function refreshCourtSheet(env: Env, dateISO?: string): Promise<CourtSheet> {
+  const target = dateISO ?? todayInNewYork();
+  const html = await fetchCourtSheetHtml(
+    { member: env.CHELSEA_MEMBER, password: env.CHELSEA_PASSWORD },
+    // Omit the target for today so the flow keeps working even if the site's
+    // option-label format drifts (the form preselects today).
+    target === todayInNewYork() ? undefined : target,
+  );
+  const sheet = parseCourtSheet(html, target, new Date().toISOString());
+  await env.COURT_CACHE.put(kvKey(target), JSON.stringify(sheet), {
     expirationTtl: KV_EXPIRATION_TTL_SECONDS,
   });
   return sheet;
 }
 
 /**
- * Returns today's court sheet, preferring a fresh cache entry, falling back to
- * a live scrape, and finally to a stale cache entry when the scrape fails.
+ * Returns the court sheet for `dateISO` (default: today), preferring a fresh
+ * cache entry, falling back to a live scrape, and finally to a stale cache
+ * entry when the scrape fails.
  */
-export async function getCourtSheet(env: Env, ctx: ExecutionContext): Promise<CourtSheetResult> {
-  const dateISO = todayInNewYork();
-  const key = kvKey(dateISO);
+export async function getCourtSheet(
+  env: Env,
+  ctx: ExecutionContext,
+  dateISO?: string,
+): Promise<CourtSheetResult> {
+  const target = dateISO ?? todayInNewYork();
+  const key = kvKey(target);
 
   const existingRaw = await env.COURT_CACHE.get(key);
   const existing: CourtSheet | null = existingRaw ? (JSON.parse(existingRaw) as CourtSheet) : null;
@@ -61,7 +68,7 @@ export async function getCourtSheet(env: Env, ctx: ExecutionContext): Promise<Co
   }
 
   try {
-    const sheet = await refreshCourtSheet(env);
+    const sheet = await refreshCourtSheet(env, target);
     return { data: sheet, stale: false };
   } catch (error) {
     const code = errorCode(error);

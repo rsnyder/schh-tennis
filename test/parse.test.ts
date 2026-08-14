@@ -76,6 +76,17 @@ describe("parseCourtSheet (real fixture)", () => {
     expect(cell!.text).toBe("* Round Robin, * Round Robin, * Round Robin, * Round Robin");
   });
 
+  it("rewrites 'LESSON BRETT' entries to 'Lesson - Brett' (South Court 5 @ 07:30 AM)", () => {
+    const south = sheet.facilities.find((f) => f.name === "South")!;
+    const slot = south.slots.find((s) => s.time === "07:30 AM")!;
+    const courtIdx = south.courts.indexOf("Court 5");
+    const cell = slot.cells[courtIdx];
+    expect(cell).not.toBeNull();
+    expect(cell!.reserved).toBe(true);
+    expect(cell!.players).toEqual(["Lesson - Brett"]);
+    expect(cell!.text).toBe("Lesson - Brett");
+  });
+
   it("parses a known open cell (North Court 4 @ 07:30 AM)", () => {
     const north = sheet.facilities.find((f) => f.name === "North")!;
     const slot = north.slots.find((s) => s.time === "07:30 AM")!;

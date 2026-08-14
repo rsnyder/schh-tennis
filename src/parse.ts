@@ -65,6 +65,20 @@ function normalizeCourtNumber(raw: string): string {
   return stripped.length ? stripped : raw;
 }
 
+/**
+ * Normalizes a raw player-cell entry. Pro lessons appear as "LESSON BRETT"
+ * (pros: Brett, Gavin, Dale) — rewrite to "Lesson - Brett" so consumers don't
+ * mistake them for a player named "L. Brett". Other entries pass through.
+ */
+function normalizeEntry(entry: string): string {
+  const lesson = /^LESSON\b[\s:-]*(.*)$/i.exec(entry.trim());
+  if (!lesson) return entry;
+  const pro = lesson[1].trim();
+  if (!pro) return "Lesson";
+  const proName = pro.charAt(0).toUpperCase() + pro.slice(1).toLowerCase();
+  return `Lesson - ${proName}`;
+}
+
 export function parseCourtSheet(html: string, dateISO: string, fetchedAt: string): CourtSheet {
   const tableMatch = GRIDVIEW_RE.exec(html);
   if (!tableMatch) {
@@ -93,7 +107,7 @@ export function parseCourtSheet(html: string, dateISO: string, fetchedAt: string
     if (cells.length !== 7) continue; // skip anything that isn't a data row
     const [time, facility, court, p1, p2, p3, p4] = cells;
     if (!time || !facility || !court) continue;
-    const players = [p1, p2, p3, p4].filter((p) => p.length > 0);
+    const players = [p1, p2, p3, p4].filter((p) => p.length > 0).map(normalizeEntry);
     rows.push({ time, facility, court, players });
   }
 
