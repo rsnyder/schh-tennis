@@ -18,6 +18,7 @@ import { ScrapeError } from "./types";
 export const CHELSEA_BASE_URL = "https://hiltheadct.chelseareservations.com";
 export const LOGIN_PATH = "/login.aspx";
 export const COURT_SHEET_PATH = "/tennis/TNReviewCourtSheet.aspx";
+export const WELCOME_PATH = "/tennis/TNwelcome2.aspx";
 
 /** A plausible desktop browser UA — the site is picky about headless-looking clients. */
 export const USER_AGENT =
@@ -276,18 +277,17 @@ function baseHeaders(jar: CookieJar, referer?: string): Record<string, string> {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Logs in as `credentials` and returns the raw HTML of the tennis court sheet.
+ * Performs the full WebForms login flow (steps a–c) and returns an
+ * authenticated cookie jar.
  *
  * @throws ScrapeError with code:
  *  - `SITE_DOWN` — network failure or 5xx from any hop
  *  - `PARSE_FAILED` — the login page is missing its WebForms tokens
  *  - `LOGIN_FAILED` — the site bounced us back to the login form
- *  - `SESSION_REJECTED` — logged in, but the court sheet redirected to login
  */
-export async function fetchCourtSheetHtml(
+async function login(
   credentials: ChelseaCredentials,
-  targetDateISO?: string,
-): Promise<string> {
+): Promise<{ jar: CookieJar; loginUrl: string }> {
   const jar = new CookieJar();
   const loginUrl = `${CHELSEA_BASE_URL}${LOGIN_PATH}`;
 
@@ -364,6 +364,21 @@ export async function fetchCourtSheetHtml(
       `unexpected login response status ${loginResponse.status}`,
     );
   }
+
+  return { jar, loginUrl };
+}
+
+/**
+ * Logs in as `credentials` and returns the raw HTML of the tennis court sheet.
+ * Throws ScrapeError (see login) plus `SESSION_REJECTED` when the court sheet
+ * bounces an authenticated session back to login, and `DATE_UNAVAILABLE` when
+ * `targetDateISO` is not among the offered play dates.
+ */
+export async function fetchCourtSheetHtml(
+  credentials: ChelseaCredentials,
+  targetDateISO?: string,
+): Promise<string> {
+  const { jar, loginUrl } = await login(credentials);
 
   /* d. GET the court sheet page. This is normally a *selection form*
      (play-date dropdown + facility checkboxes + a Display button), not the
@@ -550,4 +565,20 @@ async function readBody(response: Response, label: string): Promise<string> {
   } catch (error) {
     throw new ScrapeError("SITE_DOWN", `failed reading ${label}: ${causeMessage(error)}`);
   }
+}
+
+/**
+ * Logs in as `credentials` and returns the raw HTML of the welcome page, which
+ * carries the club's editable message block and the news/announcements image
+ * slider. Throws ScrapeError (see login) plus `SESSION_REJECTED` when the
+ * welcome page bounces an authenticated session back to login.
+ */
+export async function fetchWelcomeHtml(credentials: ChelseaCredentials): Promise<string> {
+  const { jar, loginUrl } = await login(credentials);
+  const { html } = await fetchAuthenticatedPage(
+    `${CHELSEA_BASE_URL}${WELCOME_PATH}`,
+    jar,
+    loginUrl,
+  );
+  return html;
 }

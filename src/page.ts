@@ -318,19 +318,48 @@ export const PAGE_HTML = `<!doctype html>
     border-top: 1px solid var(--border);
   }
   footer {
-    padding: 16px;
+    padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
     text-align: center;
     color: var(--muted);
     font-size: 0.75rem;
   }
+  #tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    max-width: 560px;
+    margin: 0 auto;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 44px;
+    padding: 8px 4px 6px;
+    text-decoration: none;
+    color: var(--muted);
+  }
+  .tab-item:active { background: var(--bg-alt); }
+  .tab-item.active { color: var(--green-dark); }
+  .tab-icon { font-size: 1.25rem; line-height: 1; }
+  .tab-label { font-size: 0.68rem; font-weight: 600; line-height: 1; display: flex; align-items: center; gap: 2px; }
+  .tab-ext { font-size: 0.62rem; }
 </style>
 </head>
 <body>
 <div id="stickyTop">
   <header>
     <div class="hdr-title-row">
-      <h1>SCHH Tennis</h1>
-      <a class="reserve-link" href="https://hiltheadct.chelseareservations.com/tennis/TNwelcome2.aspx" target="_blank" rel="noopener">Reserve a court&nbsp;&#8599;</a>
+      <h1>SCHH Tennis &mdash; Court Sheet</h1>
     </div>
     <div class="hdr-date-row">
       <span class="hdr-date" id="dateLabel">Loading&hellip;</span>
@@ -355,6 +384,20 @@ export const PAGE_HTML = `<!doctype html>
   <div id="slotList"></div>
 </main>
 <footer>Chelsea SCHH &middot; unofficial court sheet viewer</footer>
+<nav id="tabbar" aria-label="Primary">
+  <a class="tab-item" href="/">
+    <span class="tab-icon" aria-hidden="true">&#127968;</span>
+    <span class="tab-label">Home</span>
+  </a>
+  <a class="tab-item active" href="/courts" aria-current="page">
+    <span class="tab-icon" aria-hidden="true">&#128203;</span>
+    <span class="tab-label">Court Sheet</span>
+  </a>
+  <a class="tab-item" href="https://hiltheadct.chelseareservations.com/tennis/TNwelcome2.aspx" target="_blank" rel="noopener">
+    <span class="tab-icon" aria-hidden="true">&#127934;</span>
+    <span class="tab-label">Reserve <span class="tab-ext">&#8599;</span></span>
+  </a>
+</nav>
 <script>
 (function () {
   "use strict";

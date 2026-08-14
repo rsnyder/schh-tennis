@@ -1,8 +1,9 @@
-import { fetchCourtSheetHtml } from "./chelsea";
+import { fetchCourtSheetHtml, fetchWelcomeHtml } from "./chelsea";
 import { todayInNewYork } from "./date";
 import type { Env } from "./index";
 import { parseCourtSheet } from "./parse";
-import { CourtSheet, ScrapeError } from "./types";
+import { parseWelcome } from "./parse-welcome";
+import { CourtSheet, ScrapeError, WelcomeInfo } from "./types";
 
 export interface CourtSheetResult {
   data: CourtSheet | null;
@@ -70,6 +71,65 @@ export async function getCourtSheet(
   try {
     const sheet = await refreshCourtSheet(env, target);
     return { data: sheet, stale: false };
+  } catch (error) {
+    const code = errorCode(error);
+    if (existing) {
+      return { data: existing, stale: true, error: code };
+    }
+    return { data: null, stale: false, error: code };
+  }
+}
+
+/* ------------------------- welcome page (5-min TTL) ------------------------ */
+
+export interface WelcomeResult {
+  data: WelcomeInfo | null;
+  stale: boolean;
+  error?: string;
+}
+
+/** Conditions/announcements change frequently — much shorter freshness window. */
+export const WELCOME_FRESH_TTL_MS = 5 * 60 * 1000;
+
+const WELCOME_KV_KEY = "welcome";
+const WELCOME_KV_EXPIRATION_TTL_SECONDS = 24 * 60 * 60;
+
+function isWelcomeFresh(info: WelcomeInfo, now: number): boolean {
+  const fetchedAt = Date.parse(info.fetchedAt);
+  if (Number.isNaN(fetchedAt)) return false;
+  return now - fetchedAt < WELCOME_FRESH_TTL_MS;
+}
+
+/** Scrapes the welcome page, parses it, and writes it to KV. */
+export async function refreshWelcome(env: Env): Promise<WelcomeInfo> {
+  const html = await fetchWelcomeHtml({
+    member: env.CHELSEA_MEMBER,
+    password: env.CHELSEA_PASSWORD,
+  });
+  const info = parseWelcome(html, new Date().toISOString());
+  await env.COURT_CACHE.put(WELCOME_KV_KEY, JSON.stringify(info), {
+    expirationTtl: WELCOME_KV_EXPIRATION_TTL_SECONDS,
+  });
+  return info;
+}
+
+/**
+ * Returns the welcome info (club message + announcement slides), fresh within
+ * 5 minutes, falling back to a live scrape and then to a stale cache entry.
+ */
+export async function getWelcome(env: Env): Promise<WelcomeResult> {
+  const existingRaw = await env.COURT_CACHE.get(WELCOME_KV_KEY);
+  const existing: WelcomeInfo | null = existingRaw
+    ? (JSON.parse(existingRaw) as WelcomeInfo)
+    : null;
+
+  if (existing && isWelcomeFresh(existing, Date.now())) {
+    return { data: existing, stale: false };
+  }
+
+  try {
+    const info = await refreshWelcome(env);
+    return { data: info, stale: false };
   } catch (error) {
     const code = errorCode(error);
     if (existing) {

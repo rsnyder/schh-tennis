@@ -37,3 +37,17 @@ export interface CourtSheet {
   /** ISO timestamp of when the sheet was scraped */
   fetchedAt: string;
 }
+
+export interface WelcomeSlide {
+  name: string;
+  title: string;
+  src: string; // absolute https URL on the Chelsea site
+}
+
+/** Club message + announcement slides scraped from the welcome page. */
+export interface WelcomeInfo {
+  heading: string;
+  message: string;
+  slides: WelcomeSlide[];
+  fetchedAt: string; // ISO
+}

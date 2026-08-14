@@ -165,6 +165,22 @@ async function main() {
     fail(`unexpected login response status ${loginResponse.status}`);
   }
 
+  // 2b. Welcome page (court conditions + announcements).
+  const welcomeResponse = await fetch(`${BASE}/tennis/TNwelcome2.aspx`, {
+    method: "GET",
+    redirect: "manual",
+    headers: headers({ Referer: LOGIN_URL }),
+  });
+  mergeCookies(welcomeResponse);
+  if (welcomeResponse.status === 200) {
+    const welcomeHtml = await welcomeResponse.text();
+    const welcomePath = path.join(FIXTURE_DIR, "welcome.html");
+    await writeFile(welcomePath, welcomeHtml, "utf8");
+    console.log(`wrote ${welcomePath} (${welcomeHtml.length} bytes)`);
+  } else {
+    console.log(`welcome page returned ${welcomeResponse.status} — skipping fixture`);
+  }
+
   // 3. Authenticated court sheet, following redirects by hand.
   let url = COURT_SHEET_URL;
   let referer = LOGIN_URL;

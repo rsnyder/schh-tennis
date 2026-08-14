@@ -1,5 +1,6 @@
-import { getCourtSheet, refreshCourtSheet } from "./cache";
+import { getCourtSheet, getWelcome, refreshCourtSheet } from "./cache";
 import { fetchCourtSheetHtml } from "./chelsea";
+import { HOME_HTML } from "./home";
 import { INSTALL_HTML } from "./install";
 import { PAGE_HTML } from "./page";
 import {
@@ -32,9 +33,28 @@ export default {
     const url = new URL(request.url);
     switch (url.pathname) {
       case "/":
+        return new Response(HOME_HTML, {
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+        });
+
+      case "/courts":
         return new Response(PAGE_HTML, {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
         });
+
+      case "/api/welcome": {
+        const result = await getWelcome(env);
+        if (result.data === null && result.error) {
+          return Response.json(
+            { error: result.error, stale: false },
+            { status: 502, headers: { "cache-control": "no-store" } },
+          );
+        }
+        return Response.json(
+          { ...result.data, stale: result.stale, ...(result.error ? { error: result.error } : {}) },
+          { headers: { "cache-control": "no-store" } },
+        );
+      }
 
       case "/tv":
         return new Response(SIGNAGE_HTML, {
