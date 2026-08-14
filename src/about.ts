@@ -96,7 +96,7 @@ export const ABOUT_HTML = `<!doctype html>
 
 <section>
   <h2>What this is</h2>
-  <p>SCHH Tennis puts the day's court sheet, court conditions, and club announcements in your pocket. See who's playing where, check whether the courts are open, and find upcoming clinics and events &mdash; all without logging in.</p>
+  <p>SCHH Tennis puts the day's court sheet, court conditions, and club announcements in your pocket. See who's playing where, check whether the courts are open, and find upcoming clinics and events.</p>
   <p>The same information powers the display boards at the courts, so what you see here always matches what's posted at the facilities.</p>
 </section>
 
@@ -108,7 +108,7 @@ export const ABOUT_HTML = `<!doctype html>
 
 <section>
   <h2>Questions or ideas?</h2>
-  <p>This app is a community project and a work in progress. Suggestions, corrections, and feature ideas are welcome &mdash; contact information will be posted here soon.</p>
+  <p>This app is a community project and a work in progress. Suggestions, corrections, and feature ideas are welcome &mdash; <a href="mailto:ron@snyderjr.com">send us a note</a>.</p>
 </section>
 
 <p class="fineprint">SCHH Tennis is an unofficial companion app created by and for Sun City Hilton Head residents. It is not affiliated with Chelsea Information Systems or the Sun City Hilton Head Community Association. Court availability and club information are provided as-is; the official reservation system is authoritative.</p>
