@@ -11,7 +11,7 @@ browser ──> Worker ──> Workers KV (cache, 15-min freshness)
                 └────> hiltheadct.chelseareservations.com (WebForms login + Display postback)
 ```
 
-- `GET /` — mobile-friendly page: one grid per facility (South / North / West), courts × times.
+- `GET /` — phone-optimized page: facility tabs (South / North / West), a vertical time-slot list with full player names, open-court summaries, day navigation (‹ ›), and a "Now" highlight that auto-scrolls to the current slot. This is the page the signage QR code points to.
 - `GET /api/courtsheet` — parsed JSON for today (America/New_York). Scrapes on cache miss; serves the last good sheet with `stale: true` if the site is unreachable.
 - `GET /api/raw` — raw scraped HTML, only when `DEBUG=true` (local debugging of markup drift).
 - `GET /tv` — digital-signage view for 65" 4K outdoor TVs (dark, large type, last-name-only, no interaction). Rotates South ⇄ North & West every 20s; pin one screen with `?screen=south` or `?screen=northwest`, adjust rotation with `?rotate=NN` (seconds), show the full day (instead of upcoming-only) with `?all=1`, request another offered day with `?date=YYYY-MM-DD` (the site offers today + ~3 days), and simulate a time of day with `?time=16:00` (or `4:00PM`) to preview how the display adapts.

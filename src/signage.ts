@@ -24,7 +24,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     --border: #24312a;
     --stale-text: #ffd766;
     --header-h: 7vh;
-    --footer-h: 3vh;
+    --footer-h: 10vh;
     --cell-font: 2.2vh;
     --time-font: 2.8vh;
   }
@@ -208,12 +208,47 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     height: var(--footer-h);
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1vw;
     background: var(--bg);
+  }
+  .ftr-dots {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1vw;
   }
   .dot { width: 1.1vh; height: 1.1vh; border-radius: 50%; background: var(--border); }
   .dot.active { background: var(--green); }
+  .ftr-qr {
+    position: absolute;
+    right: 1vw;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.9vw;
+  }
+  .qr-caption {
+    text-align: right;
+    font-size: 1.9vh;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+  }
+  .qr-caption .qr-url {
+    font-size: 1.5vh;
+    font-weight: 500;
+    color: var(--green);
+    letter-spacing: 0.02em;
+  }
+  .qr-box {
+    height: calc(var(--footer-h) - 1.2vh);
+    aspect-ratio: 1 / 1;
+    background: #ffffff;
+    border-radius: 0.6vh;
+    overflow: hidden;
+  }
+  .qr-box svg { display: block; width: 100%; height: 100%; }
   .unavailable {
     position: fixed;
     top: var(--header-h);
@@ -251,9 +286,15 @@ export const SIGNAGE_HTML: string = `<!doctype html>
 <main id="main">
   <div class="screen" id="screen"></div>
 </main>
-<footer id="ftr" style="display:none">
-  <span class="dot" id="dotSouth"></span>
-  <span class="dot" id="dotNW"></span>
+<footer id="ftr">
+  <div class="ftr-dots" id="ftrDots" style="display:none">
+    <span class="dot" id="dotSouth"></span>
+    <span class="dot" id="dotNW"></span>
+  </div>
+  <div class="ftr-qr">
+    <div class="qr-caption">Court sheet on your phone<br><span class="qr-url">schh-tennis.ron-f9a.workers.dev</span></div>
+    <div class="qr-box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M4 4.5h7m3 0h3m3 0h5m1 0h7M4 5.5h1m5 0h1m3 0h3m1 0h2m1 0h1m2 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m1 0h1m2 0h1m4 0h1m1 0h3m1 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h1m1 0h5m2 0h3m2 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h4m5 0h4m1 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h2m2 0h1m1 0h3m5 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m2 0h1m4 0h1M4 12.5h1m1 0h5m2 0h2m2 0h5m2 0h1m1 0h5M4 13.5h1m1 0h1m1 0h1m2 0h3m4 0h1m1 0h1m1 0h5m1 0h1m3 0h1M4 14.5h1m1 0h1m3 0h1m2 0h1m1 0h5m1 0h1m4 0h1m1 0h1M5 15.5h5m1 0h1m2 0h3m5 0h3m4 0h1m1 0h1M5 16.5h3m1 0h3m2 0h1m2 0h1m1 0h5m5 0h2M5 17.5h2m2 0h1m1 0h2m2 0h1m1 0h1m2 0h2m1 0h1m2 0h3m3 0h1M4 18.5h3m1 0h1m1 0h4m1 0h6m1 0h1m1 0h1m3 0h3M4 19.5h2m1 0h2m6 0h2m1 0h3m2 0h1m1 0h1m5 0h1M4 20.5h1m2 0h2m1 0h3m2 0h2m2 0h1m1 0h1m2 0h1m4 0h2M4 21.5h4m6 0h1m2 0h1m2 0h1m1 0h7m1 0h1m1 0h1M4 22.5h1m1 0h2m1 0h2m1 0h1m3 0h5m1 0h1m1 0h1m2 0h1m2 0h1M4 23.5h1m4 0h1m2 0h2m3 0h1m10 0h1m2 0h1M4 24.5h1m1 0h6m1 0h1m1 0h1m2 0h1m2 0h8m1 0h3M12 25.5h4m4 0h3m1 0h1m3 0h5M4 26.5h7m3 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h1m1 0h3M4 27.5h1m5 0h1m1 0h2m2 0h1m1 0h1m3 0h3m3 0h1m2 0h1M4 28.5h1m1 0h3m1 0h1m1 0h1m3 0h1m2 0h3m2 0h5m1 0h3M4 29.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1m3 0h1m4 0h4M4 30.5h1m1 0h3m1 0h1m1 0h1m1 0h1m4 0h3m1 0h9M4 31.5h1m5 0h1m2 0h1m3 0h2m1 0h1m3 0h1m1 0h2m1 0h1m1 0h1M4 32.5h7m1 0h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h2m1 0h3"/></svg></div>
+  </div>
 </footer>
 <div class="unavailable" id="unavailable" style="display:none">
   <h2 id="unavailTitle">Loading&hellip;</h2>
@@ -713,13 +754,15 @@ export const SIGNAGE_HTML: string = `<!doctype html>
   }
 
   function renderFooter() {
+    // Footer is always visible: it carries the QR code to the phone version.
+    // Only the rotation dots hide when a single screen is pinned.
+    mainEl.classList.add("with-footer");
+    var dotsEl = document.getElementById("ftrDots");
     if (pinnedScreen) {
-      ftrEl.style.display = "none";
-      mainEl.classList.remove("with-footer");
+      dotsEl.style.display = "none";
       return;
     }
-    ftrEl.style.display = "flex";
-    mainEl.classList.add("with-footer");
+    dotsEl.style.display = "flex";
     dotSouth.className = "dot" + (currentScreen === "south" ? " active" : "");
     dotNW.className = "dot" + (currentScreen === "northwest" ? " active" : "");
   }
