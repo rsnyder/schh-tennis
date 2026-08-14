@@ -2,7 +2,7 @@
 
 A Cloudflare Worker that displays the current day's Sun City Hilton Head tennis court sheet, scraped from the Chelsea Reservations site.
 
-**Live:** https://schh-tennis.ron-f9a.workers.dev
+**Live:** https://schh-tennis.pages.dev (primary, via Cloudflare Pages) · https://schh-tennis.ron-f9a.workers.dev (Worker deployment: runs the cron pre-warm, doubles as fallback origin)
 
 ## How it works
 
@@ -51,7 +51,7 @@ full environment description, first-time setup, and operations notes. Routine
 deploy:
 
 ```sh
-npm run deploy    # = wrangler deploy (manual, no CI/CD)
+npm run deploy:all   # Worker (cron + fallback) then Pages (schh-tennis.pages.dev)
 ```
 
 ## When the site's markup changes

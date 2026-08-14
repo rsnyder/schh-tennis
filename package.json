@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "build:pages": "wrangler deploy --dry-run --outdir .wrangler/pages-build && mkdir -p pages/dist && cp .wrangler/pages-build/index.js pages/dist/_worker.js",
+    "deploy:pages": "npm run build:pages && cd pages && wrangler pages deploy --commit-dirty=true",
+    "deploy:all": "npm run deploy && npm run deploy:pages",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

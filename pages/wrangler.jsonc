@@ -1,0 +1,17 @@
+// Cloudflare Pages deployment (schh-tennis.pages.dev) — the user-facing URL.
+// Same code as the Worker (wrangler.jsonc); Pages can't run cron triggers, so
+// the Worker deployment stays on as the cache pre-warmer and fallback origin.
+{
+  "name": "schh-tennis",
+  "pages_build_output_dir": "dist",
+  "compatibility_date": "2025-08-01",
+  "kv_namespaces": [
+    {
+      "binding": "COURT_CACHE",
+      "id": "faab90773def4eccb5039f963c15a563"
+    }
+  ],
+  "vars": {
+    "DEBUG": "false"
+  }
+}

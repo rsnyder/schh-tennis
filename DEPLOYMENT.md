@@ -1,8 +1,10 @@
 # Deployment environment
 
-Everything runs as a single **Cloudflare Worker** on the free tier — there is no
-server, container, or database to maintain. This doc describes what exists in
-Cloudflare, how it gets there, and how to operate it.
+Everything runs on Cloudflare's free tier — there is no server, container, or
+database to maintain. The **same `src/` bundle deploys to two targets**: a
+Cloudflare **Pages** project (the user-facing URL) and a **Worker** (which runs
+the cron pre-warm, since Pages can't run scheduled events, and doubles as a
+fallback origin). Both share the same KV namespace, so their caches are one.
 
 ## Topology
 
@@ -10,12 +12,18 @@ Cloudflare, how it gets there, and how to operate it.
 Sylvox TVs / phones / browsers
         │  https
         ▼
-Cloudflare Worker "schh-tennis"          ← src/index.ts bundle (wrangler/esbuild)
-   ├── serves  /            (mobile page, src/page.ts)
+Cloudflare Pages "schh-tennis"  ← primary: https://schh-tennis.pages.dev
+  (pages/dist/_worker.js — the same src/index.ts bundle, advanced mode)
+   ├── serves  /            (mobile PWA, src/page.ts)
    ├── serves  /tv          (signage page, src/signage.ts)
+   ├── serves  /install, /manifest.webmanifest, /sw.js, /icons/*
    ├── serves  /api/courtsheet, /api/raw
-   ├── reads/writes ──► Workers KV "COURT_CACHE"   (parsed sheets, keyed by date)
+   ├── reads/writes ──► Workers KV "COURT_CACHE"   (shared, keyed by date)
    └── scrapes ───────► hiltheadct.chelseareservations.com  (IIS/ASP.NET WebForms)
+
+Cloudflare Worker "schh-tennis"  ← https://schh-tennis.ron-f9a.workers.dev
+   ├── cron every 15 min (~7am–9pm ET): pre-warms today's sheet into the shared KV
+   └── serves the same routes (fallback origin)
 ```
 
 ## Cloudflare resources
@@ -23,8 +31,8 @@ Cloudflare Worker "schh-tennis"          ← src/index.ts bundle (wrangler/esbui
 | Resource | Value |
 |---|---|
 | Account | Ron@snyderjr.com's Account (`f9a486f2c4e5234040005c2d2f9a4b97`) |
-| Worker name | `schh-tennis` |
-| Public URL | https://schh-tennis.ron-f9a.workers.dev (workers.dev subdomain; no custom domain, no Cloudflare zone) |
+| Pages project | `schh-tennis` → **https://schh-tennis.pages.dev** (primary URL; the QR on the TVs points here). Config: `pages/wrangler.jsonc`. Secrets set separately via `wrangler pages secret put ... --project-name schh-tennis`. |
+| Worker name | `schh-tennis` → https://schh-tennis.ron-f9a.workers.dev (cron pre-warm + fallback; no custom domain, no Cloudflare zone) |
 | KV namespace | `COURT_CACHE`, id `faab90773def4eccb5039f963c15a563`, bound as `env.COURT_CACHE` |
 | Secrets | `CHELSEA_MEMBER`, `CHELSEA_PASSWORD` (Chelsea member login; encrypted at rest, set via `wrangler secret put`, never in git) |
 | Plain vars | `DEBUG` = `"false"` in production (gates `/api/raw`) |
@@ -41,8 +49,13 @@ Deploys are manual, from a developer machine — there is no CI/CD:
 ```sh
 npx wrangler login     # once per machine; OAuth in browser, token stored in
                        # ~/Library/Preferences/.wrangler/config/default.toml
-npm run deploy         # = wrangler deploy: bundles src/, uploads, activates
+npm run deploy:all     # Worker (wrangler deploy) then Pages (build bundle →
+                       # pages/dist/_worker.js → wrangler pages deploy)
 ```
+
+Ship BOTH targets on every change (`deploy:all`) — they run the same code and
+drift between them is confusing to debug. `npm run deploy` /
+`npm run deploy:pages` deploy one target when you must.
 
 A deploy is atomic and takes effect within seconds (individual edge instances
 can serve the previous version for a few seconds after upload — retry before
@@ -53,9 +66,11 @@ with wrangler 4.x (4.122.0 at time of writing) under Node 22.
 ### First-time setup on a new account
 
 1. `npx wrangler login`
-2. `npx wrangler kv namespace create COURT_CACHE` → paste the new id into `wrangler.jsonc`
-3. `npx wrangler secret put CHELSEA_MEMBER` and `... CHELSEA_PASSWORD`
-4. `npm run deploy`
+2. `npx wrangler kv namespace create COURT_CACHE` → paste the new id into `wrangler.jsonc` AND `pages/wrangler.jsonc`
+3. `npx wrangler secret put CHELSEA_MEMBER` and `... CHELSEA_PASSWORD` (Worker)
+4. `npx wrangler pages project create schh-tennis --production-branch main`
+5. `npx wrangler pages secret put CHELSEA_MEMBER --project-name schh-tennis` and `... CHELSEA_PASSWORD ...` (Pages keeps its own copies)
+6. `npm run deploy:all`
 
 ## Local development
 
