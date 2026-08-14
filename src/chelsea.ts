@@ -582,3 +582,37 @@ export async function fetchWelcomeHtml(credentials: ChelseaCredentials): Promise
   );
   return html;
 }
+
+export const CLUB_NEWS_PATH = "/CourtAdmin/upload/TNClub.htm";
+
+/**
+ * Fetches the club news/conditions document (a Word-exported HTML file the
+ * club staff upload). Publicly accessible — no login required. The file is
+ * typically windows-1252 encoded, so bytes are decoded per its meta charset.
+ */
+export async function fetchClubNewsHtml(): Promise<string> {
+  const url = `${CHELSEA_BASE_URL}${CLUB_NEWS_PATH}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "GET",
+      redirect: "manual",
+      headers: { "User-Agent": USER_AGENT, Accept: ACCEPT_HTML },
+    });
+  } catch (error) {
+    throw new ScrapeError("SITE_DOWN", `club news fetch failed: ${causeMessage(error)}`);
+  }
+  if (response.status !== 200) {
+    throw new ScrapeError("SITE_DOWN", `club news returned ${response.status}`);
+  }
+  const bytes = await response.arrayBuffer();
+  // Sniff the charset from the (ASCII-compatible) head before decoding.
+  const sniff = new TextDecoder("latin1").decode(bytes.slice(0, 2048));
+  const charsetMatch = /charset=([a-zA-Z0-9-]+)/i.exec(sniff);
+  const charset = charsetMatch ? charsetMatch[1].toLowerCase() : "utf-8";
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+}

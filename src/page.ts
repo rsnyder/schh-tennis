@@ -318,7 +318,7 @@ export const PAGE_HTML = `<!doctype html>
     border-top: 1px solid var(--border);
   }
   footer {
-    padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
+    padding: 16px 16px calc(92px + env(safe-area-inset-bottom));
     text-align: center;
     color: var(--muted);
     font-size: 0.75rem;
@@ -342,17 +342,17 @@ export const PAGE_HTML = `<!doctype html>
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    min-height: 44px;
-    padding: 8px 4px 6px;
+    gap: 4px;
+    min-height: 62px;
+    padding: 10px 4px 8px;
     text-decoration: none;
     color: var(--muted);
   }
   .tab-item:active { background: var(--bg-alt); }
   .tab-item.active { color: var(--green-dark); }
-  .tab-icon { font-size: 1.25rem; line-height: 1; }
-  .tab-label { font-size: 0.68rem; font-weight: 600; line-height: 1; display: flex; align-items: center; gap: 2px; }
-  .tab-ext { font-size: 0.62rem; }
+  .tab-icon { font-size: 1.7rem; line-height: 1; }
+  .tab-label { font-size: 0.8rem; font-weight: 600; line-height: 1; display: flex; align-items: center; gap: 3px; }
+  .tab-ext { font-size: 0.72rem; }
 </style>
 </head>
 <body>

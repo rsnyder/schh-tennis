@@ -181,6 +181,20 @@ async function main() {
     console.log(`welcome page returned ${welcomeResponse.status} — skipping fixture`);
   }
 
+  // 2c. Club news/conditions document (public — no auth needed).
+  const clubNewsResponse = await fetch(`${BASE}/CourtAdmin/upload/TNClub.htm`, {
+    method: "GET",
+    headers: { "User-Agent": USER_AGENT },
+  });
+  if (clubNewsResponse.status === 200) {
+    const clubNewsBytes = Buffer.from(await clubNewsResponse.arrayBuffer());
+    const clubNewsPath = path.join(FIXTURE_DIR, "clubnews.html");
+    await writeFile(clubNewsPath, clubNewsBytes);
+    console.log(`wrote ${clubNewsPath} (${clubNewsBytes.length} bytes, raw encoding preserved)`);
+  } else {
+    console.log(`club news returned ${clubNewsResponse.status} — skipping fixture`);
+  }
+
   // 3. Authenticated court sheet, following redirects by hand.
   let url = COURT_SHEET_URL;
   let referer = LOGIN_URL;

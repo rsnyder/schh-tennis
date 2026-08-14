@@ -38,16 +38,17 @@ export interface CourtSheet {
   fetchedAt: string;
 }
 
-export interface WelcomeSlide {
-  name: string;
-  title: string;
-  src: string; // absolute https URL on the Chelsea site
-}
-
-/** Club message + announcement slides scraped from the welcome page. */
+/**
+ * Club news/conditions parsed from the club-uploaded TNClub.htm document
+ * (a Word-exported HTML file embedded in the welcome page iframe).
+ */
 export interface WelcomeInfo {
-  heading: string;
-  message: string;
-  slides: WelcomeSlide[];
+  /** First line of the document, e.g. "Sun City Hilton Head Tennis". */
+  title: string;
+  /**
+   * Remaining paragraphs in order, as sanitized inline HTML: escaped text
+   * plus vetted <a href> links only.
+   */
+  paragraphs: string[];
   fetchedAt: string; // ISO
 }

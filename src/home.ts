@@ -91,7 +91,7 @@ export const HOME_HTML = `<!doctype html>
     padding: 12px 16px 24px;
     min-height: 40vh;
     /* room for the fixed bottom tab bar plus the iOS home-indicator inset */
-    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
   }
   .status {
     padding: 40px 20px;
@@ -190,6 +190,51 @@ export const HOME_HTML = `<!doctype html>
     height: auto;
     border-radius: 8px;
   }
+  .club-date {
+    margin: 0 0 8px;
+    font-weight: 700;
+    color: var(--green-dark);
+    font-size: 0.95rem;
+  }
+  .club-condition {
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+  .club-card { padding-top: 4px; }
+  .club-para {
+    margin: 10px 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .club-para a { color: var(--green-dark); font-weight: 600; }
+  .club-headline {
+    margin-top: 16px;
+    font-weight: 700;
+    color: var(--green-dark);
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+  }
+  .cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    margin: 14px 0;
+    padding: 10px 16px;
+    background: var(--green);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 10px;
+  }
+  .cta-btn:active { background: var(--green-dark); }
+  .cta-icon { font-size: 1.1rem; }
+  .cta-ext { font-size: 0.8rem; opacity: 0.85; }
   #tabbar {
     position: fixed;
     left: 0;
@@ -209,17 +254,17 @@ export const HOME_HTML = `<!doctype html>
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    min-height: 44px;
-    padding: 8px 4px 6px;
+    gap: 4px;
+    min-height: 62px;
+    padding: 10px 4px 8px;
     text-decoration: none;
     color: var(--muted);
   }
   .tab-item:active { background: var(--bg-alt); }
   .tab-item.active { color: var(--green-dark); }
-  .tab-icon { font-size: 1.25rem; line-height: 1; }
-  .tab-label { font-size: 0.68rem; font-weight: 600; line-height: 1; display: flex; align-items: center; gap: 2px; }
-  .tab-ext { font-size: 0.62rem; }
+  .tab-icon { font-size: 1.7rem; line-height: 1; }
+  .tab-label { font-size: 0.8rem; font-weight: 600; line-height: 1; display: flex; align-items: center; gap: 3px; }
+  .tab-ext { font-size: 0.72rem; }
   footer {
     padding: 16px;
     text-align: center;
@@ -350,29 +395,66 @@ export const HOME_HTML = `<!doctype html>
     conditionsCardEl.innerHTML = html;
   }
 
-  function renderSlides(slides) {
-    if (!slides || !slides.length) {
-      slidesSectionEl.innerHTML = "";
-      return;
-    }
-    var html = '<div class="section-heading">Announcements</div>';
-    for (var i = 0; i < slides.length; i++) {
-      var slide = slides[i] || {};
-      if (!isSafeImageUrl(slide.src)) continue;
-      html += '<div class="card slide-card">';
-      if (slide.title) html += '<p class="slide-title">' + escapeHtml(slide.title) + "</p>";
-      html += '<img src="' + escapeHtml(slide.src) + '" alt="' + escapeHtml(slide.title || "") + '" loading="lazy">';
-      html += "</div>";
-    }
-    slidesSectionEl.innerHTML = html;
+  // Heuristic: the document opens with a date line followed by the day's
+  // court conditions; announcements follow. The first paragraph that is
+  // ALL-CAPS-ish (a shouted headline like "RATINGS CLINIC") marks the switch.
+  function looksLikeHeadline(text) {
+    var plain = String(text).replace(/<[^>]+>/g, "");
+    var letters = plain.replace(/[^A-Za-z]/g, "");
+    if (letters.length < 4) return false;
+    var upper = plain.replace(/[^A-Z]/g, "");
+    return upper.length / letters.length > 0.8;
   }
 
   function renderSuccess(data) {
     renderHeader(data.fetchedAt, !!data.stale);
     hideStatus();
-    var slides = (data.slides || []).filter(function (s) { return s && isSafeImageUrl(s.src); });
-    renderConditions(data.heading, data.message, slides.length > 0);
-    renderSlides(slides);
+    var paragraphs = data.paragraphs || [];
+
+    // Paragraphs come pre-sanitized from our API (escaped text + vetted
+    // anchors only) — injected as-is by design.
+    var splitAt = paragraphs.length;
+    for (var i = 1; i < paragraphs.length; i++) {
+      if (looksLikeHeadline(paragraphs[i])) { splitAt = i; break; }
+    }
+
+    var card = "<h2>" + escapeHtml(data.title || "Welcome") + "</h2>";
+    if (paragraphs.length === 0) {
+      card += '<p class="empty-note">No announcements right now.</p>';
+    } else {
+      if (paragraphs[0]) card += '<p class="club-date">' + paragraphs[0] + "</p>";
+      for (var c = 1; c < splitAt; c++) {
+        card += '<p class="club-condition">' + paragraphs[c] + "</p>";
+      }
+    }
+    conditionsCardEl.innerHTML = card;
+
+    var rest = paragraphs.slice(splitAt);
+    if (!rest.length) {
+      slidesSectionEl.innerHTML = "";
+      return;
+    }
+    var html = '<div class="section-heading">Announcements</div><div class="card club-card">';
+    for (var a = 0; a < rest.length; a++) {
+      var cta = ctaFromParagraph(rest[a]);
+      if (cta) {
+        html += cta;
+        continue;
+      }
+      html += '<p class="club-para' + (looksLikeHeadline(rest[a]) ? " club-headline" : "") + '">' + rest[a] + "</p>";
+    }
+    html += "</div>";
+    slidesSectionEl.innerHTML = html;
+  }
+
+  // "** View Tennis Programs/Clinics by clicking here **" deserves better than
+  // fine print: pull the link out and render it as a proper button.
+  function ctaFromParagraph(p) {
+    if (!/programs\\s*[/]\\s*clinics/i.test(p)) return null;
+    var m = /<a href="(https:[^"]+)"[^>]*>/i.exec(p);
+    if (!m) return null;
+    return '<a class="cta-btn" href="' + m[1] + '" target="_blank" rel="noopener">' +
+      '<span class="cta-icon">&#127934;</span>View Tennis Programs &amp; Clinics<span class="cta-ext">&#8599;</span></a>';
   }
 
   function renderErrorPage(err) {
@@ -401,9 +483,9 @@ export const HOME_HTML = `<!doctype html>
       .then(function (result) {
         var data = result.data;
         // Hard failure (see /api/welcome contract): HTTP 502 with no
-        // "heading" field at all — distinct from a successful-but-stale
-        // response, which still carries heading/message/slides.
-        if (!result.ok || !data || data.heading === undefined) {
+        // "title" field at all — distinct from a successful-but-stale
+        // response, which still carries title/paragraphs.
+        if (!result.ok || !data || data.title === undefined) {
           var code = data && data.error ? data.error : "UNKNOWN";
           renderErrorPage(code);
           return;

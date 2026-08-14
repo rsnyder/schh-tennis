@@ -1,8 +1,8 @@
-import { fetchCourtSheetHtml, fetchWelcomeHtml } from "./chelsea";
+import { fetchClubNewsHtml, fetchCourtSheetHtml } from "./chelsea";
 import { todayInNewYork } from "./date";
 import type { Env } from "./index";
 import { parseCourtSheet } from "./parse";
-import { parseWelcome } from "./parse-welcome";
+import { parseClubNews } from "./parse-welcome";
 import { CourtSheet, ScrapeError, WelcomeInfo } from "./types";
 
 export interface CourtSheetResult {
@@ -100,13 +100,10 @@ function isWelcomeFresh(info: WelcomeInfo, now: number): boolean {
   return now - fetchedAt < WELCOME_FRESH_TTL_MS;
 }
 
-/** Scrapes the welcome page, parses it, and writes it to KV. */
+/** Fetches the club news document (public, no login), parses it, writes it to KV. */
 export async function refreshWelcome(env: Env): Promise<WelcomeInfo> {
-  const html = await fetchWelcomeHtml({
-    member: env.CHELSEA_MEMBER,
-    password: env.CHELSEA_PASSWORD,
-  });
-  const info = parseWelcome(html, new Date().toISOString());
+  const html = await fetchClubNewsHtml();
+  const info = parseClubNews(html, new Date().toISOString());
   await env.COURT_CACHE.put(WELCOME_KV_KEY, JSON.stringify(info), {
     expirationTtl: WELCOME_KV_EXPIRATION_TTL_SECONDS,
   });
