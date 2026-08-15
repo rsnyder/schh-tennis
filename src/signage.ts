@@ -9,6 +9,13 @@ export const SIGNAGE_HTML: string = `<!doctype html>
 <title>SCHH Tennis — Signage</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎾</text></svg>">
 <style>
+  @font-face {
+    font-family: "Barlow Semi Condensed";
+    src: url("/fonts/barlow-sc-600.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
   :root {
     --bg: #0c120d;
     --bg-alt: #121a14;
@@ -163,6 +170,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     gap: 0.15vh;
   }
   .name-flow {
+    font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: var(--cell-font);
     font-weight: 600;
     color: var(--text);
@@ -231,6 +239,26 @@ export const SIGNAGE_HTML: string = `<!doctype html>
   }
   .dot { width: 1.1vh; height: 1.1vh; border-radius: 50%; background: var(--border); }
   .dot.active { background: var(--green); }
+  /* TEMP: JS probe badge (see body markup) */
+  .js-probe {
+    position: fixed;
+    left: 1vw;
+    bottom: 1.8vh;
+    z-index: 50;
+    font-size: 2.6vh;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 0.6vh 1.4vh;
+    border-radius: 1vh;
+    background: #d9a400;
+    color: #1c1508;
+  }
+  .js-probe.on { background: #4caf6d; color: #08120b; }
+  /* TEMP: no-JS font canary — the check mark only fits inside the fixed-width
+     box when the condensed font actually loaded. Remove with the JS probe. */
+  .font-probe { position: fixed; left: 1vw; bottom: 6.2vh; z-index: 50; display: flex; align-items: center; gap: 0.8vh; font-size: 2vh; }
+  .fp-label { color: #7c8b7e; font-weight: 700; letter-spacing: 0.06em; }
+  .fp-box { font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; background: #223428; color: #d7e4da; padding: 0.4vh 0.8vh; border-radius: 0.6vh; white-space: nowrap; overflow: hidden; max-width: 12.5vh; }
   .ftr-qr {
     position: absolute;
     right: 1vw;
@@ -311,7 +339,8 @@ export const SIGNAGE_HTML: string = `<!doctype html>
 <!-- TEMP: JS-detection probe for Sylvox testing; standalone so it flips even
      if the main app script fails on an old engine. Remove after testing. -->
 <div class="js-probe" id="jsprobe">JS: OFF</div>
-<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";})();</script>
+<div class="font-probe" id="fontprobe"><span class="fp-label">FONT</span><span class="fp-box">CONDENSED&#10003;</span></div>
+<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";try{if(document.fonts&&document.fonts.check){document.fonts.load('600 16px "Barlow Semi Condensed"').then(function(){var ok=document.fonts.check('600 16px "Barlow Semi Condensed"');var f=document.getElementById("fontprobe");if(f){f.textContent="FONT: "+(ok?"OK":"NO");f.className="js-probe "+(ok?"on":"");f.style.bottom="6.2vh";}});}}catch(err){}})();</script>
 <div class="unavailable" id="unavailable" style="display:none">
   <h2 id="unavailTitle">Loading&hellip;</h2>
   <div class="code" id="unavailCode"></div>

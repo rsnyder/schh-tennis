@@ -1,4 +1,6 @@
 import { getCourtSheet, getWelcome, refreshCourtSheet } from "./cache";
+import { todayInNewYork } from "./date";
+import { BARLOW_SC_600_WOFF2_B64 } from "./fonts";
 import { fetchCourtSheetHtml } from "./chelsea";
 import { HOME_HTML } from "./home";
 import { ABOUT_HTML } from "./about";
@@ -66,9 +68,15 @@ export default {
 
       case "/tv/static": {
         // Server-rendered, script-free variant for viewers (like the Sylvox
-        // TV's built-in HTML renderer) that don't execute <script>. Today's
-        // sheet only (v1) — self-refreshes via <meta http-equiv="refresh">.
-        const result = await getCourtSheet(env, ctx);
+        // TV's built-in HTML renderer) that don't execute <script>. Self-
+        // refreshes via <meta http-equiv="refresh">.
+        const staticDateParam = url.searchParams.get("date");
+        if (staticDateParam !== null && !/^\d{4}-\d{2}-\d{2}$/.test(staticDateParam)) {
+          return new Response(renderStaticUnavailable({ errorCode: "BAD_DATE", refreshSeconds: 300 }), {
+            headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+          });
+        }
+        const result = await getCourtSheet(env, ctx, staticDateParam ?? undefined);
         if (result.data === null) {
           return new Response(renderStaticUnavailable({ errorCode: result.error, refreshSeconds: 60 }), {
             headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
@@ -83,7 +91,10 @@ export default {
             ? "south"
             : "northwest";
         const refreshSeconds = pinned ? 300 : 20;
-        const showAll = url.searchParams.get("all") === "1";
+        // The hide-past filter only makes sense when viewing today's sheet.
+        const showAll =
+          url.searchParams.get("all") === "1" ||
+          (staticDateParam !== null && staticDateParam !== todayInNewYork());
 
         return new Response(
           renderStaticSignage(result.data, { screen, refreshSeconds, showAll, stale: result.stale }),
@@ -115,6 +126,11 @@ export default {
         // no-cache so service worker updates roll out promptly
         return new Response(SERVICE_WORKER_JS, {
           headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-cache" },
+        });
+
+      case "/fonts/barlow-sc-600.woff2":
+        return new Response(pngFromBase64(BARLOW_SC_600_WOFF2_B64), {
+          headers: { "content-type": "font/woff2", "cache-control": "public, max-age=31536000, immutable" },
         });
 
       case "/icons/icon-192.png":

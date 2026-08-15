@@ -494,9 +494,15 @@ function renderNorthWestScreen(sheet: CourtSheet, nowMin: number, showAll: boole
 // tiny standalone script flips to "JS: ON". Remove once the TV's capabilities
 // are confirmed.
 const JS_PROBE_HTML = `<div class="js-probe" id="jsprobe">JS: OFF</div>
-<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";})();</script>`;
+<div class="font-probe" id="fontprobe"><span class="fp-label">FONT</span><span class="fp-box">CONDENSED&#10003;</span></div>
+<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";try{if(document.fonts&&document.fonts.check){document.fonts.load('600 16px "Barlow Semi Condensed"').then(function(){var ok=document.fonts.check('600 16px "Barlow Semi Condensed"');var f=document.getElementById("fontprobe");if(f){f.textContent="FONT: "+(ok?"OK":"NO");f.className="js-probe "+(ok?"on":"");f.style.bottom="6.2vh";}});}}catch(err){}})();</script>`;
 
 const JS_PROBE_CSS = `
+  /* TEMP: no-JS font canary — the check mark only fits inside the fixed-width
+     box when the condensed font actually loaded. Remove with the JS probe. */
+  .font-probe { position: fixed; left: 1vw; bottom: 6.2vh; z-index: 50; display: flex; align-items: center; gap: 0.8vh; font-size: 2vh; }
+  .fp-label { color: #7c8b7e; font-weight: 700; letter-spacing: 0.06em; }
+  .fp-box { font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; background: #223428; color: #d7e4da; padding: 0.4vh 0.8vh; border-radius: 0.6vh; white-space: nowrap; overflow: hidden; max-width: 12.5vh; }
   .js-probe {
     position: fixed;
     left: 1vw;
@@ -521,6 +527,13 @@ const FOOTER_HTML = `<footer id="ftr">
 
 function css(f: FontEstimate): string {
   return `
+  @font-face {
+    font-family: "Barlow Semi Condensed";
+    src: url("/fonts/barlow-sc-600.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
   :root {
     --bg: #0c120d;
     --bg-alt: #121a14;
@@ -674,6 +687,7 @@ function css(f: FontEstimate): string {
     gap: 0.15vh;
   }
   .name-flow {
+    font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: var(--cell-font);
     font-weight: 600;
     color: var(--text);
