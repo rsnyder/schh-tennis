@@ -155,7 +155,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 0.2vh 0.4vw;
+    padding: 0.1vh 0.15vw;
     min-width: 0;
     overflow: hidden;
   }
@@ -694,7 +694,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     // Names render as one wrapping comma-delimited line per cell, so two
     // constraints bound the font: the longest single word must fit the column
     // width, and the cell's total text (wrapped) must fit the cell area.
-    // Average glyph width ~0.58em for this stack at weight 600.
+    // Average glyph width ~0.53em for Barlow Semi Condensed at weight 600.
     var maxWordChars = 6;
     var maxCellChars = 8;
     var flows = screenEl.querySelectorAll(".name-flow");
@@ -715,10 +715,10 @@ export const SIGNAGE_HTML: string = `<!doctype html>
       var colWidthPx = sample
         ? sample.clientWidth - 6
         : (grids[g].clientWidth * 0.9) / cols - 18;
-      var wordMax = colWidthPx / (maxWordChars * 0.58);
+      var wordMax = colWidthPx / (maxWordChars * 0.53);
       // Area fit: lines(font) = ceil(chars*0.58*font / colWidth), need
       // lines * 1.15 * font <= 0.85 * rowHeight  =>  solve approximately.
-      var areaMax = Math.sqrt((colWidthPx * rowHeightPx * 0.85) / (maxCellChars * 0.58 * 1.15));
+      var areaMax = Math.sqrt((colWidthPx * rowHeightPx * 0.85) / (maxCellChars * 0.53 * 1.15));
       var wMax = Math.min(wordMax, areaMax);
       if (wMax < widthBasedMax) widthBasedMax = wMax;
     }
@@ -770,7 +770,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
 
   function setFonts(fontPx) {
     document.documentElement.style.setProperty("--cell-font", fontPx + "px");
-    document.documentElement.style.setProperty("--time-font", (fontPx * 1.3) + "px");
+    document.documentElement.style.setProperty("--time-font", Math.min(fontPx * 1.3, window.innerHeight * 0.030) + "px");
   }
 
   function anyCellOverflows() {

@@ -266,8 +266,43 @@ function renderCell(cell: FacilityCell | null, extraClass: string, fit: EventFit
     names.push(cell.text);
   }
   const flowText = names.join(", ");
+  let style = "";
+  if (fit) {
+    // Per-cell fit via greedy word-wrap simulation (words can't split at wrap,
+    // so pure char-count models over-promise for long surnames). Walk font
+    // candidates downward from the global size; keep the first that fits.
+    const words = flowText.split(" ");
+    const fits = (f: number): boolean => {
+      // Deliberately pessimistic glyph width: per-cell shrink should err
+      // small (a slightly small outlier cell beats a clipped name).
+      const capacity = fit.colWidthVh / (0.62 * f); // chars per line
+      let lines = 1;
+      let used = 0;
+      for (const w of words) {
+        const need = (used === 0 ? 0 : 1) + w.length;
+        if (used + need <= capacity) {
+          used += need;
+        } else {
+          lines++;
+          used = w.length;
+        }
+      }
+      return lines * 1.25 * f <= 0.88 * fit.rowHeightVh;
+    };
+    let cellVh = fit.cellFontVh;
+    while (cellVh > fit.cellFontVh * 0.55 && !fits(cellVh)) cellVh *= 0.94;
+    // Safety net: if reality still overflows the estimate, truncate the last
+    // line cleanly with an ellipsis instead of chopping glyphs. The clamp's
+    // bound (0.92) is looser than the fit solver's (0.88), so it never bites
+    // on cells the solver already fitted.
+    const clampLines = Math.max(1, Math.floor((0.92 * fit.rowHeightVh) / (1.25 * cellVh)));
+    const decl =
+      (cellVh < fit.cellFontVh - 0.01 ? `font-size:${cellVh.toFixed(2)}vh;` : "") +
+      `-webkit-line-clamp:${clampLines}`;
+    style = ` style="${decl}"`;
+  }
   return {
-    html: `<div class="cell cell-reserved${x}"><div class="name-flow">${escapeHtml(flowText)}</div></div>`,
+    html: `<div class="cell cell-reserved${x}"><div class="name-flow"${style}>${escapeHtml(flowText)}</div></div>`,
     flowText,
   };
 }
@@ -329,8 +364,8 @@ function buildGrid(facility: Facility, nowMin: number, showAll: boolean, isToday
 // real pixel viewport. 1vw = (16/9) vh at that aspect ratio.
 const VW_PER_VH = 16 / 9;
 const VIEWPORT_WIDTH_VH = 100 * VW_PER_VH; // ~177.78
-const HEADER_H_VH = 7;
-const FOOTER_H_VH = 10;
+const HEADER_H_VH = 9.5;
+const FOOTER_H_VH = 0;
 const SCREEN_H_PADDING_VH = 2 * 1.5 * VW_PER_VH; // .screen { padding: 1.2vh 1.5vw }
 const SCREEN_V_PADDING_VH = 2 * 1.2;
 const NW_GAP_VH = 1.5 * VW_PER_VH; // .nw-wrap { gap: 1.5vw }
@@ -338,7 +373,8 @@ const NW_TITLE_H_VH = 3; // .facility-title: ~2vh font + 0.6vh margin + line-hei
 
 const MIN_FONT_VH = 1.6;
 const MAX_FONT_VH = 3.4;
-const FONT_SAFETY_FACTOR = 0.78; // no client-side measure-and-shrink loop, so bias small
+const TIME_FONT_MAX_VH = 3.0; // times need less prominence than names on sparse grids
+const FONT_SAFETY_FACTOR = 1.0; // TEMP: no margin — stress-testing the per-cell fit + line-clamp nets // no client-side measure-and-shrink loop, so bias small
 const EVENT_FONT_FACTOR = 0.62; // flat factor for event/block-cell text in place of per-cell fitting
 
 interface GridDims {
@@ -359,15 +395,18 @@ function estimateFontSizes(rows: number, grids: GridDims[], gridHeightVh: number
   // Names render as one wrapping comma-delimited line per cell, so two
   // constraints bound the font: the longest single word must fit the column
   // width, and the cell's total text (wrapped) must fit the cell area.
-  // Average glyph width ~0.58em for this font stack at weight 600.
+  // Average glyph width ~0.53em for Barlow Semi Condensed at weight 600.
   let maxWordChars = 6;
-  let maxCellChars = 8;
   for (const text of flowTexts) {
-    if (text.length > maxCellChars) maxCellChars = text.length;
     for (const w of text.split(/\s+/)) {
       if (w.length > maxWordChars) maxWordChars = w.length;
     }
   }
+  // Size the shared font for TYPICAL cells (85th percentile by length); the
+  // few outlier cells (four long surnames) get a per-cell shrink instead of
+  // dragging the whole grid down.
+  const lengths = flowTexts.map((t) => t.length).sort((a, b) => a - b);
+  const maxCellChars = Math.max(8, lengths.length ? lengths[Math.min(lengths.length - 1, Math.floor(lengths.length * 0.85))] : 8);
 
   // The time column's width depends on the time font, and the time font
   // depends on the chosen cell font — iterate the coupled estimate a few
@@ -380,20 +419,20 @@ function estimateFontSizes(rows: number, grids: GridDims[], gridHeightVh: number
       if (g.courts <= 0) continue;
       const timeColVh = 3.2 * timeFontVh;
       const colWidthVh = Math.max(0.5, (g.widthVh - timeColVh) / g.courts);
-      const wordMaxVh = colWidthVh / (maxWordChars * 0.58);
-      // Area fit: lines(font) ~= ceil(chars*0.58*font / colWidth), need
+      const wordMaxVh = colWidthVh / (maxWordChars * 0.53);
+      // Area fit: lines(font) ~= ceil(chars*0.53*font / colWidth), need
       // lines * 1.15 * font <= 0.85 * rowHeight => solve approximately.
-      const areaMaxVh = Math.sqrt((colWidthVh * rowHeightVh * 0.85) / (maxCellChars * 0.58 * 1.15));
+      const areaMaxVh = Math.sqrt((colWidthVh * rowHeightVh * 0.85) / (maxCellChars * 0.53 * 1.15));
       const wMax = Math.min(wordMaxVh, areaMaxVh);
       if (wMax < widthBasedMaxVh) widthBasedMaxVh = wMax;
     }
     cellFontVh = Math.min(MAX_FONT_VH, rowBasedMaxVh, widthBasedMaxVh);
     if (cellFontVh < MIN_FONT_VH) cellFontVh = Math.min(MIN_FONT_VH, rowBasedMaxVh);
-    timeFontVh = cellFontVh * 1.3;
+    timeFontVh = Math.min(cellFontVh * 1.3, TIME_FONT_MAX_VH);
   }
 
   const safeCellFontVh = cellFontVh * FONT_SAFETY_FACTOR;
-  const safeTimeFontVh = safeCellFontVh * 1.3;
+  const safeTimeFontVh = Math.min(safeCellFontVh * 1.3, TIME_FONT_MAX_VH);
   const evFontVh = safeCellFontVh * EVENT_FONT_FACTOR;
   return { cellFontVh: safeCellFontVh, timeFontVh: safeTimeFontVh, evFontVh };
 }
@@ -493,37 +532,34 @@ function renderNorthWestScreen(sheet: CourtSheet, nowMin: number, showAll: boole
 // TEMP: JS-detection probe for Sylvox testing — static "JS: OFF" badge that a
 // tiny standalone script flips to "JS: ON". Remove once the TV's capabilities
 // are confirmed.
-const JS_PROBE_HTML = `<div class="js-probe" id="jsprobe">JS: OFF</div>
-<div class="font-probe" id="fontprobe"><span class="fp-label">FONT</span><span class="fp-box">CONDENSED&#10003;</span></div>
-<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";try{if(document.fonts&&document.fonts.check){document.fonts.load('600 16px "Barlow Semi Condensed"').then(function(){var ok=document.fonts.check('600 16px "Barlow Semi Condensed"');var f=document.getElementById("fontprobe");if(f){f.textContent="FONT: "+(ok?"OK":"NO");f.className="js-probe "+(ok?"on":"");f.style.bottom="6.2vh";}});}}catch(err){}})();</script>`;
+const HEADER_FLAGS_HTML = `<div class="hdr-flags">
+      <div class="js-probe" id="jsprobe">JS: OFF</div>
+      <div class="font-probe" id="fontprobe"><span class="fp-label">FONT</span><span class="fp-box">CONDENSED&#10003;</span></div>
+    </div>`;
+
+const JS_PROBE_HTML = `<script>(function(){var e=document.getElementById("jsprobe");if(e){e.textContent="JS: ON";e.className="js-probe on";}try{if(document.fonts&&document.fonts.check){document.fonts.load('600 16px "Barlow Semi Condensed"').then(function(){var ok=document.fonts.check('600 16px "Barlow Semi Condensed"');var f=document.getElementById("fontprobe");if(f){f.textContent="FONT: "+(ok?"OK":"NO");f.className="js-probe "+(ok?"on":"");}},function(){var f=document.getElementById("fontprobe");if(f){f.textContent="FONT: NO";f.className="js-probe";}});}}catch(err){}})();</script>`;
 
 const JS_PROBE_CSS = `
-  /* TEMP: no-JS font canary — the check mark only fits inside the fixed-width
-     box when the condensed font actually loaded. Remove with the JS probe. */
-  .font-probe { position: fixed; left: 1vw; bottom: 6.2vh; z-index: 50; display: flex; align-items: center; gap: 0.8vh; font-size: 2vh; }
-  .fp-label { color: #7c8b7e; font-weight: 700; letter-spacing: 0.06em; }
-  .fp-box { font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; background: #223428; color: #d7e4da; padding: 0.4vh 0.8vh; border-radius: 0.6vh; white-space: nowrap; overflow: hidden; max-width: 12.5vh; }
+  /* TEMP probes (JS + condensed-font detection), parked in the header until
+     verified on the actual hardware. Remove with the probe markup. */
   .js-probe {
-    position: fixed;
-    left: 1vw;
-    bottom: 1.8vh;
-    z-index: 50;
-    font-size: 2.6vh;
+    font-size: 1.8vh;
     font-weight: 800;
     letter-spacing: 0.06em;
-    padding: 0.6vh 1.4vh;
-    border-radius: 1vh;
+    padding: 0.3vh 1vh;
+    border-radius: 0.8vh;
     background: #d9a400;
     color: #1c1508;
+    white-space: nowrap;
   }
-  .js-probe.on { background: #4caf6d; color: #08120b; }`;
+  .js-probe.on { background: #4caf6d; color: #08120b; }
+  .font-probe { display: flex; align-items: center; gap: 0.8vh; font-size: 2vh; }
+  .fp-label { color: #7c8b7e; font-weight: 700; letter-spacing: 0.06em; font-size: 1.6vh; }
+  .fp-box { font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 600; background: #223428; color: #d7e4da; padding: 0.2vh 0.8vh; border-radius: 0.6vh; white-space: nowrap; overflow: hidden; max-width: 12.5vh; }
+`;
 
-const FOOTER_HTML = `<footer id="ftr">
-  <div class="ftr-qr">
-    <div class="qr-caption">Court sheet on your phone<br><span class="qr-url">schh-tennis.pages.dev</span></div>
-    <div class="qr-box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M4 4.5h7m1 0h2m1 0h2m5 0h1m3 0h7M4 5.5h1m5 0h1m2 0h3m4 0h2m1 0h1m2 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m2 0h3m1 0h1m1 0h4m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h3m1 0h1m3 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h4m1 0h3m3 0h2m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m2 0h1m2 0h2M4 12.5h1m3 0h1m1 0h3m1 0h1m1 0h6m1 0h1m1 0h5m2 0h1M4 13.5h2m5 0h1m2 0h1m11 0h1m1 0h5M4 14.5h3m1 0h1m1 0h1m3 0h1m1 0h4m7 0h1m4 0h1M4 15.5h2m1 0h3m1 0h2m1 0h1m1 0h2m1 0h6m1 0h4m1 0h2M9 16.5h2m3 0h2m1 0h1m3 0h2m1 0h2m5 0h1M4 17.5h3m1 0h2m6 0h3m1 0h3m1 0h9M4 18.5h1m5 0h1m2 0h1m2 0h1m3 0h1m1 0h1m1 0h1m2 0h2m1 0h1M5 19.5h1m1 0h3m2 0h2m4 0h1m2 0h1m1 0h1m1 0h4m2 0h2M6 20.5h1m2 0h3m2 0h1m1 0h6m1 0h1m1 0h1m5 0h1M4 21.5h1m1 0h1m8 0h2m5 0h1m3 0h4m1 0h2M6 22.5h1m3 0h2m4 0h4m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1M6 23.5h1m1 0h1m2 0h1m2 0h1m1 0h2m1 0h3m4 0h2m3 0h2M4 24.5h2m1 0h6m1 0h2m1 0h1m3 0h1m2 0h6m2 0h1M12 25.5h1m1 0h1m1 0h3m1 0h1m1 0h3m3 0h1m3 0h1M4 26.5h7m1 0h3m1 0h1m3 0h5m1 0h1m1 0h3m1 0h1M4 27.5h1m5 0h1m3 0h1m3 0h1m2 0h4m3 0h1m2 0h1M4 28.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h7m1 0h2M4 29.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h1m5 0h1m1 0h1m5 0h1M4 30.5h1m1 0h3m1 0h1m3 0h2m1 0h1m1 0h1m2 0h4m3 0h4M4 31.5h1m5 0h1m3 0h1m2 0h2m2 0h1m2 0h1m3 0h2m1 0h2M4 32.5h7m1 0h1m2 0h5m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1"/></svg></div>
-  </div>
-</footer>`;
+const HEADER_QR_HTML = `<div class="qr-caption">Court sheet on your phone<br><span class="qr-url">schh-tennis.pages.dev</span></div>
+    <div class="qr-box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M4 4.5h7m1 0h2m1 0h2m5 0h1m3 0h7M4 5.5h1m5 0h1m2 0h3m4 0h2m1 0h1m2 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m2 0h3m1 0h1m1 0h4m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h3m1 0h1m3 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h4m1 0h3m3 0h2m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m2 0h1m2 0h2M4 12.5h1m3 0h1m1 0h3m1 0h1m1 0h6m1 0h1m1 0h5m2 0h1M4 13.5h2m5 0h1m2 0h1m11 0h1m1 0h5M4 14.5h3m1 0h1m1 0h1m3 0h1m1 0h4m7 0h1m4 0h1M4 15.5h2m1 0h3m1 0h2m1 0h1m1 0h2m1 0h6m1 0h4m1 0h2M9 16.5h2m3 0h2m1 0h1m3 0h2m1 0h2m5 0h1M4 17.5h3m1 0h2m6 0h3m1 0h3m1 0h9M4 18.5h1m5 0h1m2 0h1m2 0h1m3 0h1m1 0h1m1 0h1m2 0h2m1 0h1M5 19.5h1m1 0h3m2 0h2m4 0h1m2 0h1m1 0h1m1 0h4m2 0h2M6 20.5h1m2 0h3m2 0h1m1 0h6m1 0h1m1 0h1m5 0h1M4 21.5h1m1 0h1m8 0h2m5 0h1m3 0h4m1 0h2M6 22.5h1m3 0h2m4 0h4m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1M6 23.5h1m1 0h1m2 0h1m2 0h1m1 0h2m1 0h3m4 0h2m3 0h2M4 24.5h2m1 0h6m1 0h2m1 0h1m3 0h1m2 0h6m2 0h1M12 25.5h1m1 0h1m1 0h3m1 0h1m1 0h3m3 0h1m3 0h1M4 26.5h7m1 0h3m1 0h1m3 0h5m1 0h1m1 0h3m1 0h1M4 27.5h1m5 0h1m3 0h1m3 0h1m2 0h4m3 0h1m2 0h1M4 28.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h7m1 0h2M4 29.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h1m5 0h1m1 0h1m5 0h1M4 30.5h1m1 0h3m1 0h1m3 0h2m1 0h1m1 0h1m2 0h4m3 0h4M4 31.5h1m5 0h1m3 0h1m2 0h2m2 0h1m2 0h1m3 0h2m1 0h2M4 32.5h7m1 0h1m2 0h5m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1"/></svg></div>`;
 
 function css(f: FontEstimate): string {
   return `
@@ -548,7 +584,7 @@ function css(f: FontEstimate): string {
     --null-bg-alt: #0d130f;
     --border: #24312a;
     --stale-text: #ffd766;
-    --header-h: 7vh;
+    --header-h: 9.5vh;
     --footer-h: 10vh;
     --cell-font: ${f.cellFontVh.toFixed(2)}vh;
     --time-font: ${f.timeFontVh.toFixed(2)}vh;
@@ -583,10 +619,16 @@ function css(f: FontEstimate): string {
   .hdr-left { display: flex; flex-direction: column; justify-content: center; line-height: 1.15; min-width: 0; }
   .hdr-left .brand { font-size: 1.7vh; font-weight: 700; color: var(--green); letter-spacing: 0.16em; }
   .hdr-left .screen-title { font-size: 2.6vh; font-weight: 700; color: var(--text); letter-spacing: 0.06em; white-space: nowrap; }
-  .hdr-center { font-size: 2.6vh; font-weight: 600; color: var(--text); text-align: center; flex: 1; padding: 0 2vw; }
-  .hdr-right { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
-  .hdr-right .updated-row { display: flex; align-items: center; gap: 0.6vw; margin-top: 0.3vh; }
-  .hdr-right .updated { font-size: 2.3vh; font-weight: 600; color: #b9c4bb; white-space: nowrap; }
+  .hdr-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4vh; padding: 0 1vw; min-width: 0; }
+  .hdr-center .hdr-date { font-size: 2.8vh; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .hdr-center .updated-row { display: flex; align-items: center; gap: 0.6vw; }
+  .hdr-center .updated { font-size: 2.2vh; font-weight: 600; color: #b9c4bb; white-space: nowrap; }
+  .hdr-right { display: flex; align-items: center; gap: 1vw; line-height: 1.15; }
+  .hdr-flags { display: flex; flex-direction: column; gap: 0.5vh; align-items: flex-end; }
+  .qr-caption { text-align: right; font-size: 1.7vh; font-weight: 600; color: var(--text); line-height: 1.35; }
+  .qr-caption .qr-url { font-size: 1.4vh; font-weight: 500; color: var(--green); letter-spacing: 0.02em; }
+  .qr-box { height: calc(var(--header-h) - 1.8vh); aspect-ratio: 1 / 1; background: #ffffff; border-radius: 0.6vh; overflow: hidden; }
+  .qr-box svg { display: block; width: 100%; height: 100%; }
   .chip-stale {
     font-size: 1.3vh;
     font-weight: 700;
@@ -603,7 +645,6 @@ function css(f: FontEstimate): string {
     left: 0; right: 0; bottom: 0;
     overflow: hidden;
   }
-  main#main.with-footer { bottom: var(--footer-h); }
   .screen {
     position: absolute;
     inset: 0;
@@ -672,7 +713,7 @@ function css(f: FontEstimate): string {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 0.2vh 0.4vw;
+    padding: 0.1vh 0.15vw;
     min-width: 0;
     overflow: hidden;
   }
@@ -688,6 +729,8 @@ function css(f: FontEstimate): string {
   }
   .name-flow {
     font-family: "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
     font-size: var(--cell-font);
     font-weight: 600;
     color: var(--text);
@@ -844,18 +887,21 @@ export function renderStaticSignage(sheet: CourtSheet, opts: RenderStaticSignage
     <div class="brand">SCHH TENNIS</div>
     <div class="screen-title">${escapeHtml(screenTitle)}</div>
   </div>
-  <div class="hdr-center">${escapeHtml(dateLabel)}</div>
-  <div class="hdr-right">
+  <div class="hdr-center">
+    <div class="hdr-date">${escapeHtml(dateLabel)}</div>
     <div class="updated-row">
       <span class="updated">${escapeHtml(updatedLabel)}</span>
       ${staleChip}
     </div>
+  </div>
+  <div class="hdr-right">
+    ${HEADER_FLAGS_HTML}
+    ${HEADER_QR_HTML}
   </div>`;
 
-  const bodyHtml = `<main id="main" class="with-footer">
+  const bodyHtml = `<main id="main">
   <div class="screen">${screenRender.bodyHtml}</div>
-</main>
-${FOOTER_HTML}`;
+</main>`;
 
   return renderDocument({
     refreshSeconds: opts.refreshSeconds,
@@ -876,8 +922,7 @@ export function renderStaticUnavailable(opts: RenderStaticUnavailableOptions): s
   const bodyHtml = `<div class="unavailable">
   <h2>Court sheet unavailable</h2>
   <div class="code">${opts.errorCode ? escapeHtml(opts.errorCode) : ""}</div>
-</div>
-${FOOTER_HTML}`;
+</div>`;
 
   return renderDocument({
     refreshSeconds: opts.refreshSeconds,
