@@ -290,7 +290,7 @@ function buildGrid(facility: Facility, nowMin: number, showAll: boolean, isToday
   const colTemplate = `max-content repeat(${courts.length}, 1fr)`;
   const rowTemplate = `auto repeat(${slots.length}, 1fr)`;
   let html = `<div class="grid" data-rows="${slots.length}" data-cols="${courts.length}" style="grid-template-columns:${colTemplate};grid-template-rows:${rowTemplate}">`;
-  html += '<div class="hcell">Time</div>';
+  html += '<div class="hcell"></div>';
   for (const c of courts) html += `<div class="hcell">${escapeHtml(shortCourtLabel(c))}</div>`;
 
   // Highlight the slot currently in play: the latest one that has started.
@@ -338,7 +338,7 @@ const NW_TITLE_H_VH = 3; // .facility-title: ~2vh font + 0.6vh margin + line-hei
 
 const MIN_FONT_VH = 1.6;
 const MAX_FONT_VH = 3.4;
-const FONT_SAFETY_FACTOR = 0.74; // no client-side measure-and-shrink loop, so bias small
+const FONT_SAFETY_FACTOR = 0.78; // no client-side measure-and-shrink loop, so bias small
 const EVENT_FONT_FACTOR = 0.62; // flat factor for event/block-cell text in place of per-cell fitting
 
 interface GridDims {

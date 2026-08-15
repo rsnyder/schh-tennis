@@ -588,7 +588,7 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     var colTemplate = "max-content repeat(" + courts.length + ", 1fr)";
     var rowTemplate = "auto repeat(" + slots.length + ", 1fr)";
     var html = '<div class="grid" data-rows="' + slots.length + '" data-cols="' + courts.length + '" style="grid-template-columns:' + colTemplate + ";grid-template-rows:" + rowTemplate + '">';
-    html += '<div class="hcell">Time</div>';
+    html += '<div class="hcell"></div>';
     for (var c = 0; c < courts.length; c++) {
       html += '<div class="hcell">' + escapeHtml(shortCourtLabel(courts[c])) + "</div>";
     }
