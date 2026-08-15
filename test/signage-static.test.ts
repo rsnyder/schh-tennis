@@ -66,14 +66,19 @@ function makeSheet(date: string): CourtSheet {
 }
 
 describe("renderStaticSignage", () => {
-  it("contains zero <script> tags", () => {
+  // TEMP: while the Sylvox JS-detection probe is in place, exactly ONE script
+  // (the probe) is allowed; the page must still fully render without it.
+  // Restore the zero-script assertion when the probe is removed.
+  it("contains only the temporary JS-detection probe script", () => {
     const html = renderStaticSignage(makeSheet(todayInNewYork()), {
       screen: "south",
       refreshSeconds: 20,
       showAll: true,
       stale: false,
     });
-    expect(html.toLowerCase()).not.toContain("<script");
+    expect(html.toLowerCase().split("<script").length - 1).toBe(1);
+    expect(html).toContain('id="jsprobe"');
+    expect(html).toContain("JS: OFF");
   });
 
   it("renders grid markup with courts and time slots", () => {
@@ -157,7 +162,7 @@ describe("renderStaticSignage", () => {
     expect(html).toContain("OLDER DATA");
     expect(html).not.toContain("ftr-dots");
     expect(html).not.toContain('class="dot');
-    expect(html.toLowerCase()).not.toContain("<script");
+    expect(html.toLowerCase().split("<script").length - 1).toBe(1); // TEMP probe only
   });
 
   it("renders the North & West screen side-by-side even when West data is missing", () => {
@@ -177,7 +182,7 @@ describe("renderStaticSignage", () => {
 describe("renderStaticUnavailable", () => {
   it("renders a script-free error page with the error code and a 60s refresh", () => {
     const html = renderStaticUnavailable({ errorCode: "SITE_DOWN", refreshSeconds: 60 });
-    expect(html.toLowerCase()).not.toContain("<script");
+    expect(html.toLowerCase().split("<script").length - 1).toBe(1); // TEMP probe only
     expect(html).toContain("Court sheet unavailable");
     expect(html).toContain("SITE_DOWN");
     expect(html).toMatch(/<meta http-equiv="refresh" content="60">/);

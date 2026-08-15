@@ -205,21 +205,58 @@ interface CellRender {
   flowText: string | null;
 }
 
-function renderCell(cell: FacilityCell | null, extraClass: string): CellRender {
+/** Known grid geometry, available on the second render pass once fonts are estimated. */
+interface EventFit {
+  colWidthVh: number;
+  rowHeightVh: number;
+  cellFontVh: number;
+}
+
+/**
+ * Sizes an event/block label to its own cell: short labels ("Lesson - Dale",
+ * "Round Robin") render at name-size, long league text wraps smaller. Mirrors
+ * the JS version's per-cell fitting, as an estimate.
+ */
+function fitEventFontVh(lines: string[], fit: EventFit): number {
+  let maxWord = 3;
+  let totalChars = 0;
+  for (const l of lines) {
+    totalChars += l.length + 1;
+    for (const w of l.split(/\s+/)) maxWord = Math.max(maxWord, w.length);
+  }
+  const wordMax = fit.colWidthVh / (maxWord * 0.6);
+  const areaMax = Math.sqrt(
+    (fit.colWidthVh * fit.rowHeightVh * 0.75) / (Math.max(totalChars, 4) * 0.6 * 1.15),
+  );
+  // Cap on the ROW height, not the name font: a short label like
+  // "Lesson - Dale" should fill its cell even when long name lists have
+  // forced the global name font small.
+  const cap = fit.rowHeightVh * 0.42;
+  const f = Math.min(cap, wordMax, areaMax) * 0.85;
+  return Math.max(fit.cellFontVh * 0.5, f);
+}
+
+function eventStyle(lines: string[], fit: EventFit | null): string {
+  if (!fit) return "";
+  return ` style="font-size:${fitEventFontVh(lines, fit).toFixed(2)}vh"`;
+}
+
+function renderCell(cell: FacilityCell | null, extraClass: string, fit: EventFit | null): CellRender {
   const x = extraClass || "";
   if (cell == null) return { html: `<div class="cell cell-null${x}"></div>`, flowText: null };
   if (!cell.reserved) return { html: `<div class="cell cell-open${x}">&middot;</div>`, flowText: null };
   const players = cell.players || [];
   if (isBlockBooking(players)) {
+    const label = blockLabel(players[0]);
     return {
-      html: `<div class="cell cell-block${x}"><span class="block-label">${escapeHtml(blockLabel(players[0]))}</span></div>`,
+      html: `<div class="cell cell-block${x}"><span class="block-label"${eventStyle([label], fit)}>${escapeHtml(label)}</span></div>`,
       flowText: null,
     };
   }
   if (players.some(isEventEntry)) {
-    const inner = eventLines(players)
-      .map((l) => `<div class="event-line">${escapeHtml(blockLabel(l))}</div>`)
-      .join("");
+    const lines = eventLines(players).map(blockLabel);
+    const style = eventStyle(lines, fit);
+    const inner = lines.map((l) => `<div class="event-line"${style}>${escapeHtml(l)}</div>`).join("");
     return { html: `<div class="cell cell-event${x}">${inner}</div>`, flowText: null };
   }
   const names: string[] = [];
@@ -242,7 +279,7 @@ interface GridRender {
   flowTexts: string[];
 }
 
-function buildGrid(facility: Facility, nowMin: number, showAll: boolean, isToday: boolean): GridRender {
+function buildGrid(facility: Facility, nowMin: number, showAll: boolean, isToday: boolean, fit: EventFit | null = null): GridRender {
   const slots = filterSlots(facility.slots || [], nowMin, showAll);
   if ((facility.slots || []).length > 0 && slots.length === 0) {
     return { html: '<div class="empty-msg">Play has ended for today</div>', rows: 0, courts: 0, flowTexts: [] };
@@ -274,7 +311,7 @@ function buildGrid(facility: Facility, nowMin: number, showAll: boolean, isToday
     html += `<div class="tcell${now}">${escapeHtml(tp.hm)}<span class="ampm">${escapeHtml(tp.ap)}</span></div>`;
     const cells = slot.cells || [];
     for (let j = 0; j < courts.length; j++) {
-      const r = renderCell(cells[j] ?? null, now);
+      const r = renderCell(cells[j] ?? null, now, fit);
       html += r.html;
       if (r.flowText) flowTexts.push(r.flowText);
     }
@@ -392,7 +429,16 @@ function renderSouthScreen(sheet: CourtSheet, nowMin: number, showAll: boolean, 
   const grid = buildGrid(south, nowMin, showAll, isToday);
   const grids: GridDims[] = grid.courts > 0 ? [{ courts: grid.courts, widthVh }] : [];
   const est = estimateFontSizes(grid.rows, grids, heightVh, grid.flowTexts);
-  return { bodyHtml: `<div class="south-wrap">${grid.html}</div>`, ...est };
+  // Second pass with known geometry so event/block cells get per-cell fonts.
+  const fit: EventFit | null = grid.courts > 0
+    ? {
+        colWidthVh: (widthVh - 3.2 * est.timeFontVh) / grid.courts,
+        rowHeightVh: heightVh / (grid.rows + 1),
+        cellFontVh: est.cellFontVh,
+      }
+    : null;
+  const fitted = buildGrid(south, nowMin, showAll, isToday, fit);
+  return { bodyHtml: `<div class="south-wrap">${fitted.html}</div>`, ...est };
 }
 
 function renderNorthWestScreen(sheet: CourtSheet, nowMin: number, showAll: boolean, isToday: boolean): ScreenRender {
@@ -415,8 +461,22 @@ function renderNorthWestScreen(sheet: CourtSheet, nowMin: number, showAll: boole
   const flowTexts = [...(northGrid?.flowTexts ?? []), ...(westGrid?.flowTexts ?? [])];
   const est = estimateFontSizes(rows, grids, heightVh, flowTexts);
 
-  const northHtml = north ? northGrid!.html : '<div class="empty-msg">No North court data.</div>';
-  const westHtml = west ? westGrid!.html : '<div class="empty-msg">No West court data.</div>';
+  const fitFor = (g: GridRender | null): EventFit | null =>
+    g && g.courts > 0
+      ? {
+          colWidthVh: (colWidthVh - 3.2 * est.timeFontVh) / g.courts,
+          rowHeightVh: heightVh / (g.rows + 1),
+          cellFontVh: est.cellFontVh,
+        }
+      : null;
+  const northHtml =
+    north && northGrid
+      ? buildGrid(north, nowMin, showAll, isToday, fitFor(northGrid)).html
+      : '<div class="empty-msg">No North court data.</div>';
+  const westHtml =
+    west && westGrid
+      ? buildGrid(west, nowMin, showAll, isToday, fitFor(westGrid)).html
+      : '<div class="empty-msg">No West court data.</div>';
   const bodyHtml =
     '<div class="nw-wrap">' +
     `<div class="nw-col"><div class="facility-title">NORTH</div>${northHtml}</div>` +
@@ -429,6 +489,28 @@ function renderNorthWestScreen(sheet: CourtSheet, nowMin: number, showAll: boole
 /* ------------------------------------------------------------------ */
 /* document shell                                                     */
 /* ------------------------------------------------------------------ */
+
+// TEMP: JS-detection probe for Sylvox testing — static "JS: OFF" badge that a
+// tiny standalone script flips to "JS: ON". Remove once the TV's capabilities
+// are confirmed.
+const JS_PROBE_HTML = `<div class="js-probe" id="jsprobe">JS: OFF</div>
+<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";})();</script>`;
+
+const JS_PROBE_CSS = `
+  .js-probe {
+    position: fixed;
+    left: 1vw;
+    bottom: 1.8vh;
+    z-index: 50;
+    font-size: 2.6vh;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 0.6vh 1.4vh;
+    border-radius: 1vh;
+    background: #d9a400;
+    color: #1c1508;
+  }
+  .js-probe.on { background: #4caf6d; color: #08120b; }`;
 
 const FOOTER_HTML = `<footer id="ftr">
   <div class="ftr-qr">
@@ -491,7 +573,7 @@ function css(f: FontEstimate): string {
   .hdr-center { font-size: 2.6vh; font-weight: 600; color: var(--text); text-align: center; flex: 1; padding: 0 2vw; }
   .hdr-right { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
   .hdr-right .updated-row { display: flex; align-items: center; gap: 0.6vw; margin-top: 0.3vh; }
-  .hdr-right .updated { font-size: 1.4vh; color: var(--muted); white-space: nowrap; }
+  .hdr-right .updated { font-size: 2.3vh; font-weight: 600; color: #b9c4bb; white-space: nowrap; }
   .chip-stale {
     font-size: 1.3vh;
     font-weight: 700;
@@ -539,9 +621,9 @@ function css(f: FontEstimate): string {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6vh;
+    font-size: 2.4vh;
     font-weight: 700;
-    color: var(--muted);
+    color: #b9c4bb;
     letter-spacing: 0.05em;
     border-bottom: 2px solid var(--border);
     text-transform: uppercase;
@@ -710,7 +792,7 @@ function renderDocument(opts: { refreshSeconds: number; font: FontEstimate; head
 <meta name="robots" content="noindex">
 <title>SCHH Tennis — Signage</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎾</text></svg>">
-<style>${css(opts.font)}
+<style>${css(opts.font)}${JS_PROBE_CSS}
 </style>
 </head>
 <body>
@@ -718,6 +800,7 @@ function renderDocument(opts: { refreshSeconds: number; font: FontEstimate; head
 ${opts.headerHtml}
 </header>
 ${opts.bodyHtml}
+${JS_PROBE_HTML}
 </body>
 </html>
 `;

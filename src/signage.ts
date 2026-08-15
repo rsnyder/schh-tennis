@@ -110,9 +110,9 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6vh;
+    font-size: 2.4vh;
     font-weight: 700;
-    color: var(--muted);
+    color: #b9c4bb;
     letter-spacing: 0.05em;
     border-bottom: 2px solid var(--border);
     text-transform: uppercase;
@@ -308,6 +308,10 @@ export const SIGNAGE_HTML: string = `<!doctype html>
     <div class="qr-box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M4 4.5h7m1 0h2m1 0h2m5 0h1m3 0h7M4 5.5h1m5 0h1m2 0h3m4 0h2m1 0h1m2 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m2 0h3m1 0h1m1 0h4m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h3m1 0h1m3 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h4m1 0h3m3 0h2m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m2 0h1m2 0h2M4 12.5h1m3 0h1m1 0h3m1 0h1m1 0h6m1 0h1m1 0h5m2 0h1M4 13.5h2m5 0h1m2 0h1m11 0h1m1 0h5M4 14.5h3m1 0h1m1 0h1m3 0h1m1 0h4m7 0h1m4 0h1M4 15.5h2m1 0h3m1 0h2m1 0h1m1 0h2m1 0h6m1 0h4m1 0h2M9 16.5h2m3 0h2m1 0h1m3 0h2m1 0h2m5 0h1M4 17.5h3m1 0h2m6 0h3m1 0h3m1 0h9M4 18.5h1m5 0h1m2 0h1m2 0h1m3 0h1m1 0h1m1 0h1m1 0h2m1 0h2m1 0h1M5 19.5h1m1 0h3m2 0h2m4 0h1m2 0h1m1 0h1m1 0h4m2 0h2M6 20.5h1m2 0h3m2 0h1m1 0h6m1 0h1m1 0h1m5 0h1M4 21.5h1m1 0h1m8 0h2m5 0h1m3 0h4m1 0h2M6 22.5h1m3 0h2m4 0h4m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1M6 23.5h1m1 0h1m2 0h1m2 0h1m1 0h2m1 0h3m4 0h2m3 0h2M4 24.5h2m1 0h6m1 0h2m1 0h1m3 0h1m2 0h6m2 0h1M12 25.5h1m1 0h1m1 0h3m1 0h1m1 0h3m3 0h1m3 0h1M4 26.5h7m1 0h3m1 0h1m3 0h5m1 0h1m1 0h3m1 0h1M4 27.5h1m5 0h1m3 0h1m3 0h1m2 0h4m3 0h1m2 0h1M4 28.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h7m1 0h2M4 29.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h1m5 0h1m1 0h1m5 0h1M4 30.5h1m1 0h3m1 0h1m3 0h2m1 0h1m1 0h1m2 0h4m3 0h4M4 31.5h1m5 0h1m3 0h1m2 0h2m2 0h1m2 0h1m3 0h2m1 0h2M4 32.5h7m1 0h1m2 0h5m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1"/></svg></div>
   </div>
 </footer>
+<!-- TEMP: JS-detection probe for Sylvox testing; standalone so it flips even
+     if the main app script fails on an old engine. Remove after testing. -->
+<div class="js-probe" id="jsprobe">JS: OFF</div>
+<script>(function(){var e=document.getElementById("jsprobe");e.textContent="JS: ON";e.className="js-probe on";})();</script>
 <div class="unavailable" id="unavailable" style="display:none">
   <h2 id="unavailTitle">Loading&hellip;</h2>
   <div class="code" id="unavailCode"></div>
