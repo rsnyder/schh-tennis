@@ -1,4 +1,6 @@
 // About page (/about) — placeholder copy, to be refined later.
+import { version as APP_VERSION } from "../package.json";
+
 export const ABOUT_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -44,6 +46,7 @@ export const ABOUT_HTML = `<!doctype html>
   .hero img { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
   .hero h1 { margin: 10px 0 2px; font-size: 1.25rem; color: var(--green-dark); }
   .hero .tagline { margin: 0; color: var(--muted); font-size: 0.85rem; }
+  .hero .version { margin: 6px 0 0; color: var(--muted); font-size: 0.72rem; letter-spacing: 0.03em; }
   section { margin-top: 18px; }
   section h2 {
     margin: 0 0 6px;
@@ -92,6 +95,7 @@ export const ABOUT_HTML = `<!doctype html>
   <img src="/icons/icon-192.png" alt="SCHH Tennis app icon">
   <h1>SCHH Tennis</h1>
   <p class="tagline">Court sheets and club news for Sun City Hilton Head tennis</p>
+  <p class="version">Version ${APP_VERSION}</p>
 </div>
 
 <section>
