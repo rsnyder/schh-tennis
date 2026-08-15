@@ -15,6 +15,7 @@ import {
   SERVICE_WORKER_JS,
 } from "./pwa";
 import { SIGNAGE_HTML } from "./signage";
+import { renderStaticSignage, renderStaticUnavailable, StaticScreen } from "./signage-static";
 import { ScrapeError } from "./types";
 
 function pngResponse(b64: string): Response {
@@ -62,6 +63,33 @@ export default {
         return new Response(SIGNAGE_HTML, {
           headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
         });
+
+      case "/tv/static": {
+        // Server-rendered, script-free variant for viewers (like the Sylvox
+        // TV's built-in HTML renderer) that don't execute <script>. Today's
+        // sheet only (v1) — self-refreshes via <meta http-equiv="refresh">.
+        const result = await getCourtSheet(env, ctx);
+        if (result.data === null) {
+          return new Response(renderStaticUnavailable({ errorCode: result.error, refreshSeconds: 60 }), {
+            headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+          });
+        }
+
+        const screenParam = url.searchParams.get("screen");
+        const pinned = screenParam === "south" || screenParam === "northwest";
+        const screen: StaticScreen = pinned
+          ? (screenParam as StaticScreen)
+          : Math.floor(Date.now() / 1000 / 20) % 2 === 0
+            ? "south"
+            : "northwest";
+        const refreshSeconds = pinned ? 300 : 20;
+        const showAll = url.searchParams.get("all") === "1";
+
+        return new Response(
+          renderStaticSignage(result.data, { screen, refreshSeconds, showAll, stale: result.stale }),
+          { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
+        );
+      }
 
       case "/more":
         return new Response(MORE_HTML, {
