@@ -16,9 +16,27 @@ import {
   pngFromBase64,
   SERVICE_WORKER_JS,
 } from "./pwa";
-import { SIGNAGE_HTML } from "./signage";
-import { renderStaticSignage, renderStaticUnavailable, StaticScreen } from "./signage-static";
+import { renderStaticSignage, renderStaticUnavailable, StaticScreen } from "./signage";
 import { ScrapeError } from "./types";
+
+/** Parses ?time= as "HH:MM" (24h) or "h:mmAM/PM" into minutes-since-midnight. */
+function parseTimeParam(t: string | null): number | null {
+  if (!t) return null;
+  const s = t.trim();
+  const ampm = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(s);
+  if (ampm) {
+    let h = parseInt(ampm[1], 10) % 12;
+    if (/pm/i.test(ampm[3])) h += 12;
+    return h * 60 + parseInt(ampm[2], 10);
+  }
+  const h24 = /^(\d{1,2}):(\d{2})$/.exec(s);
+  if (h24) {
+    const h = parseInt(h24[1], 10);
+    const m = parseInt(h24[2], 10);
+    if (h < 24 && m < 60) return h * 60 + m;
+  }
+  return null;
+}
 
 function pngResponse(b64: string): Response {
   return new Response(pngFromBase64(b64), {
@@ -62,14 +80,10 @@ export default {
       }
 
       case "/tv":
-        return new Response(SIGNAGE_HTML, {
-          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
-        });
-
       case "/tv/static": {
-        // Server-rendered, script-free variant for viewers (like the Sylvox
-        // TV's built-in HTML renderer) that don't execute <script>. Self-
-        // refreshes via <meta http-equiv="refresh">.
+        // The signage page: server-rendered core (works with zero JS, updates
+        // via meta refresh) plus an optional live-clock script. /tv/static is
+        // an alias kept for the URLs already configured on the TVs.
         const staticDateParam = url.searchParams.get("date");
         if (staticDateParam !== null && !/^\d{4}-\d{2}-\d{2}$/.test(staticDateParam)) {
           return new Response(renderStaticUnavailable({ errorCode: "BAD_DATE", refreshSeconds: 300 }), {
@@ -85,19 +99,28 @@ export default {
 
         const screenParam = url.searchParams.get("screen");
         const pinned = screenParam === "south" || screenParam === "northwest";
+        const rotateParam = parseInt(url.searchParams.get("rotate") ?? "", 10);
+        const rotateSeconds = Number.isNaN(rotateParam) ? 20 : Math.max(5, rotateParam);
         const screen: StaticScreen = pinned
           ? (screenParam as StaticScreen)
-          : Math.floor(Date.now() / 1000 / 20) % 2 === 0
+          : Math.floor(Date.now() / 1000 / rotateSeconds) % 2 === 0
             ? "south"
             : "northwest";
-        const refreshSeconds = pinned ? 300 : 20;
+        const refreshSeconds = pinned ? 300 : rotateSeconds;
         // The hide-past filter only makes sense when viewing today's sheet.
         const showAll =
           url.searchParams.get("all") === "1" ||
           (staticDateParam !== null && staticDateParam !== todayInNewYork());
+        const nowMinOverride = parseTimeParam(url.searchParams.get("time"));
 
         return new Response(
-          renderStaticSignage(result.data, { screen, refreshSeconds, showAll, stale: result.stale }),
+          renderStaticSignage(result.data, {
+            screen,
+            refreshSeconds,
+            showAll,
+            stale: result.stale,
+            ...(nowMinOverride !== null ? { nowMinOverride } : {}),
+          }),
           { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } },
         );
       }

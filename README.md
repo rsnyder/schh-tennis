@@ -15,8 +15,7 @@ browser ──> Worker ──> Workers KV (cache, 15-min freshness)
 - `GET /courts` — the court sheet: facility tabs (South / North / West), a vertical time-slot list with full player names, open-court summaries, day navigation (‹ ›), and a "Now" highlight that auto-scrolls to the current slot. It's an installable PWA (manifest + minimal service worker + app icons at `/manifest.webmanifest`, `/sw.js`, `/icons/*`): "Add to Home Screen" gives an app icon, splash screen, and standalone (no browser chrome) presentation. Data always comes from the network; the service worker only keeps the shell available offline.
 - `GET /api/courtsheet` — parsed JSON for today (America/New_York). Scrapes on cache miss; serves the last good sheet with `stale: true` if the site is unreachable.
 - `GET /api/raw` — raw scraped HTML, only when `DEBUG=true` (local debugging of markup drift).
-- `GET /tv/static` — JavaScript-free signage variant for TVs whose HTML viewer can't run scripts (e.g. the Sylvox built-in browser): the Worker renders the full grid server-side and the page self-refreshes via `<meta refresh>` (20s screen rotation unpinned via time-bucketing, 5-min data refresh pinned). Same `?screen=` / `?all=1` params.
-- `GET /tv` — digital-signage view for 65" 4K outdoor TVs (dark, large type, last-name-only, no interaction). Rotates South ⇄ North & West every 20s; pin one screen with `?screen=south` or `?screen=northwest`, adjust rotation with `?rotate=NN` (seconds), show the full day (instead of upcoming-only) with `?all=1`, request another offered day with `?date=YYYY-MM-DD` (the site offers today + ~3 days), and simulate a time of day with `?time=16:00` (or `4:00PM`) to preview how the display adapts.
+- `GET /tv` — digital-signage view for the 65" 4K outdoor TVs (dark, large type, last-name-only, no interaction). Server-rendered core: the Worker builds the full grid per request and the page self-refreshes via `<meta refresh>` (20s screen rotation unpinned via time-bucketing, 5-min data refresh pinned), so it works even on viewers without JavaScript; a single optional script adds a live clock when JS is available. `/tv/static` is an alias for TVs already configured with that URL. Rotates South ⇄ North & West every 20s; pin one screen with `?screen=south` or `?screen=northwest`, adjust rotation with `?rotate=NN` (seconds), show the full day (instead of upcoming-only) with `?all=1`, request another offered day with `?date=YYYY-MM-DD` (the site offers today + ~3 days), and simulate a time of day with `?time=16:00` (or `4:00PM`) to preview how the display adapts.
 
 `?date=YYYY-MM-DD` also works on `/` and `/api/courtsheet` (404 `DATE_UNAVAILABLE` when the site doesn't offer that day).
 - A cron trigger (every 15 min, ~7am–9pm ET) pre-warms the cache so visitors rarely wait on a scrape.
@@ -55,6 +54,11 @@ deploy:
 ```sh
 npm run deploy:all   # Worker (cron + fallback) then Pages (schh-tennis.pages.dev)
 ```
+
+**Releases are versioned** via the `version` field in `package.json` (single
+source of truth, shown in the bottom-right corner of the TV display). Bump it
+with each meaningful release — `npm version patch|minor` or edit by hand —
+then commit and `npm run deploy:all`.
 
 ## When the site's markup changes
 
