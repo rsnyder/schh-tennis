@@ -532,7 +532,7 @@ function renderNorthWestScreen(sheet: CourtSheet, nowMin: number, showAll: boole
 /* document shell                                                     */
 /* ------------------------------------------------------------------ */
 
-const HEADER_QR_HTML = `<div class="qr-caption">Court sheet on your phone<br><span class="qr-url">schh-tennis.pages.dev</span></div>
+const HEADER_QR_HTML = `<div class="qr-caption">Add court sheet app to your phone<br><span class="qr-url">schh-tennis.pages.dev</span></div>
     <div class="qr-box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M4 4.5h7m1 0h2m1 0h2m5 0h1m3 0h7M4 5.5h1m5 0h1m2 0h3m4 0h2m1 0h1m2 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m2 0h3m1 0h1m1 0h4m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h3m1 0h1m3 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h4m1 0h3m3 0h2m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m2 0h1m2 0h2M4 12.5h1m3 0h1m1 0h3m1 0h1m1 0h6m1 0h1m1 0h5m2 0h1M4 13.5h2m5 0h1m2 0h1m11 0h1m1 0h5M4 14.5h3m1 0h1m1 0h1m3 0h1m1 0h4m7 0h1m4 0h1M4 15.5h2m1 0h3m1 0h2m1 0h1m1 0h2m1 0h6m1 0h4m1 0h2M9 16.5h2m3 0h2m1 0h1m3 0h2m1 0h2m5 0h1M4 17.5h3m1 0h2m6 0h3m1 0h3m1 0h9M4 18.5h1m5 0h1m2 0h1m2 0h1m3 0h1m1 0h1m1 0h1m2 0h2m1 0h1M5 19.5h1m1 0h3m2 0h2m4 0h1m2 0h1m1 0h1m1 0h4m2 0h2M6 20.5h1m2 0h3m2 0h1m1 0h6m1 0h1m1 0h1m5 0h1M4 21.5h1m1 0h1m8 0h2m5 0h1m3 0h4m1 0h2M6 22.5h1m3 0h2m4 0h4m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1M6 23.5h1m1 0h1m2 0h1m2 0h1m1 0h2m1 0h3m4 0h2m3 0h2M4 24.5h2m1 0h6m1 0h2m1 0h1m3 0h1m2 0h6m2 0h1M12 25.5h1m1 0h1m1 0h3m1 0h1m1 0h3m3 0h1m3 0h1M4 26.5h7m1 0h3m1 0h1m3 0h5m1 0h1m1 0h3m1 0h1M4 27.5h1m5 0h1m3 0h1m3 0h1m2 0h4m3 0h1m2 0h1M4 28.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h7m1 0h2M4 29.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h1m5 0h1m1 0h1m5 0h1M4 30.5h1m1 0h3m1 0h1m3 0h2m1 0h1m1 0h1m2 0h4m3 0h4M4 31.5h1m5 0h1m3 0h1m2 0h2m2 0h1m2 0h1m3 0h2m1 0h2M4 32.5h7m1 0h1m2 0h5m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1"/></svg></div>`;
 
 function css(f: FontEstimate): string {
@@ -602,7 +602,7 @@ function css(f: FontEstimate): string {
   .hdr-center .liveclock:not(:empty)::after { content: "·"; margin-left: 0.6vw; color: #7c8b7e; font-weight: 400; }
   .hdr-right { display: flex; align-items: center; gap: 1vw; line-height: 1.15; }
   .hdr-flags { display: flex; flex-direction: column; gap: 0.5vh; align-items: flex-end; }
-  .qr-caption { text-align: right; font-size: 1.7vh; font-weight: 600; color: var(--text); line-height: 1.35; }
+  .qr-caption { text-align: right; font-size: 1.5vh; font-weight: 600; color: var(--text); line-height: 1.35; }
   .qr-caption .qr-url { font-size: 1.4vh; font-weight: 500; color: var(--green); letter-spacing: 0.02em; }
   .qr-box { height: calc(var(--header-h) - 1.8vh); aspect-ratio: 1 / 1; background: #ffffff; border-radius: 0.6vh; overflow: hidden; }
   .qr-box svg { display: block; width: 100%; height: 100%; }

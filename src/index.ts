@@ -100,13 +100,20 @@ export default {
         const screenParam = url.searchParams.get("screen");
         const pinned = screenParam === "south" || screenParam === "northwest";
         const rotateParam = parseInt(url.searchParams.get("rotate") ?? "", 10);
-        const rotateSeconds = Number.isNaN(rotateParam) ? 20 : Math.max(5, rotateParam);
+        // Rotation unit: North/West shows for one unit, South for two (it has
+        // 12 courts to read vs 7). The cycle is stateless — computed from the
+        // wall clock — and each response's meta refresh lands exactly on the
+        // next phase change, so each phase costs one reload.
+        const unit = Number.isNaN(rotateParam) ? 20 : Math.max(5, rotateParam);
+        const cyclePos = Math.floor(Date.now() / 1000) % (3 * unit);
         const screen: StaticScreen = pinned
           ? (screenParam as StaticScreen)
-          : Math.floor(Date.now() / 1000 / rotateSeconds) % 2 === 0
+          : cyclePos < 2 * unit
             ? "south"
             : "northwest";
-        const refreshSeconds = pinned ? 300 : rotateSeconds;
+        const refreshSeconds = pinned
+          ? 300
+          : Math.max(1, (cyclePos < 2 * unit ? 2 * unit : 3 * unit) - cyclePos);
         // The hide-past filter only makes sense when viewing today's sheet.
         const showAll =
           url.searchParams.get("all") === "1" ||
