@@ -1,5 +1,7 @@
 // "More" page (/more) — link hub reached from the fourth tab. Future links
 // (settings, feedback, etc.) get added to the list here.
+import { ANALYTICS_TAG } from "./analytics";
+
 export const MORE_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -10,6 +12,7 @@ export const MORE_HTML = `<!doctype html>
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1f5c2c">
+${ANALYTICS_TAG}
 <style>
   :root {
     --green: #2f7a3d;

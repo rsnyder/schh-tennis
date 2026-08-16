@@ -26,11 +26,13 @@ describe("HOME_HTML", () => {
     expect(HOME_HTML).toContain("max-width: 560px");
   });
 
-  it("has no external resource references aside from hotlinked slide images", () => {
+  it("has no external resources besides the analytics beacon and hotlinked images", () => {
     expect(HOME_HTML).not.toMatch(/<link[^>]+rel=["']stylesheet["']/);
-    expect(HOME_HTML).not.toMatch(/<script[^>]+src=/);
-    // The only place a bare https:// URL should appear in markup is the
-    // Reserve tab-bar link and the (JS-templated) slide <img src>.
+    // The Cloudflare Web Analytics beacon is the one sanctioned external script.
+    const externalScripts = HOME_HTML.match(/<script[^>]+src="([^"]+)"/g) ?? [];
+    expect(externalScripts).toEqual([
+      '<script defer src="https://static.cloudflareinsights.com/beacon.min.js"',
+    ]);
     expect(HOME_HTML).toContain("https://hiltheadct.chelseareservations.com/tennis/TNwelcome2.aspx");
   });
 

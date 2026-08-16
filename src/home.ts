@@ -2,6 +2,8 @@
 // announcements, and the bottom tab-bar navigation. Visual language matches
 // src/page.ts exactly (light theme, green accents, system font stack,
 // max-width 560px centered column).
+import { ANALYTICS_TAG } from "./analytics";
+
 export const HOME_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -17,6 +19,7 @@ export const HOME_HTML = `<!doctype html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SCHH Tennis">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+${ANALYTICS_TAG}
 <style>
   :root {
     --green: #2f7a3d;

@@ -1,5 +1,7 @@
 // Mobile-first frontend page for SCHH Tennis court sheet viewer.
 // Vertical, list-based layout — no horizontal scrolling on any screen size.
+import { ANALYTICS_TAG } from "./analytics";
+
 export const PAGE_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -15,6 +17,7 @@ export const PAGE_HTML = `<!doctype html>
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SCHH Tennis">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+${ANALYTICS_TAG}
 <style>
   :root {
     --green: #2f7a3d;

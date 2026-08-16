@@ -1,3 +1,4 @@
+import { ANALYTICS_TAG } from "./analytics";
 // About page (/about) — placeholder copy, to be refined later.
 import { version as APP_VERSION } from "../package.json";
 
@@ -11,6 +12,7 @@ export const ABOUT_HTML = `<!doctype html>
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1f5c2c">
+${ANALYTICS_TAG}
 <style>
   :root {
     --green: #2f7a3d;

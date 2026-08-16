@@ -65,7 +65,7 @@ function nyUpdatedLabel(iso: string): string {
       hour12: true,
       timeZone: "America/New_York",
     });
-    return "As of " + t;
+    return "Last updated " + t;
   } catch {
     return "";
   }
@@ -597,9 +597,9 @@ function css(f: FontEstimate): string {
   .hdr-center .hdr-date { font-size: 2.8vh; font-weight: 700; color: var(--text); white-space: nowrap; }
   .hdr-center .updated-row { display: flex; align-items: center; gap: 0.6vw; }
   .hdr-center .updated { font-size: 2.2vh; font-weight: 600; color: #b9c4bb; white-space: nowrap; }
-  .hdr-center .liveclock { font-size: 2.2vh; font-weight: 700; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .hdr-center .liveclock { font-size: 2.8vh; font-weight: 700; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .hdr-center .liveclock:empty { display: none; }
-  .hdr-center .liveclock:not(:empty)::after { content: "·"; margin-left: 0.6vw; color: #7c8b7e; font-weight: 400; }
+  .hdr-center .liveclock:not(:empty)::before { content: "·"; margin: 0 0.6vw; color: #7c8b7e; font-weight: 400; }
   .hdr-right { display: flex; align-items: center; gap: 1vw; line-height: 1.15; }
   .hdr-flags { display: flex; flex-direction: column; gap: 0.5vh; align-items: flex-end; }
   .qr-caption { text-align: right; font-size: 1.5vh; font-weight: 600; color: var(--text); line-height: 1.35; }
@@ -825,7 +825,7 @@ function css(f: FontEstimate): string {
   }`;
 }
 
-// Optional enhancement: a live America/New_York clock next to the "As of"
+// Optional enhancement: a live America/New_York clock on the date line.
 // stamp. The page is fully functional without it — no-JS viewers just don't
 // get a clock. Interval is coarse (15s) since only h:mm is shown, and the
 // meta refresh replaces the page frequently anyway.
@@ -881,9 +881,8 @@ export function renderStaticSignage(sheet: CourtSheet, opts: RenderStaticSignage
     <div class="screen-title">${escapeHtml(screenTitle)}</div>
   </div>
   <div class="hdr-center">
-    <div class="hdr-date">${escapeHtml(dateLabel)}</div>
+    <div class="hdr-date">${escapeHtml(dateLabel)}<span class="liveclock" id="liveclock"></span></div>
     <div class="updated-row">
-      <span class="liveclock" id="liveclock"></span>
       <span class="updated">${escapeHtml(updatedLabel)}</span>
       ${staleChip}
     </div>
