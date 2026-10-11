@@ -7,3 +7,6 @@ pages/dist/
 # Captured fixtures contain real member names — regenerate locally with:
 #   node --env-file=.dev.vars scripts/capture-fixture.mjs
 test/fixtures/*.html
+
+# Local Claude Code settings
+.claude/
