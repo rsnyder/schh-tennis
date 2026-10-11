@@ -1,5 +1,7 @@
 # Deployment environment
 
+> Technical reference. Overview: [top-level README](../README.md). Non-technical operations: [ADMINISTRATION.md](ADMINISTRATION.md).
+
 Everything runs on Cloudflare's free tier — there is no server, container, or
 database to maintain. The **same `src/` bundle deploys to two targets**: a
 Cloudflare **Pages** project (the user-facing URL) and a **Worker** (which runs
@@ -91,9 +93,13 @@ with wrangler 4.x (4.122.0 at time of writing) under Node 22.
 - **Site down / markup drift:** the Worker serves the last good sheet with
   `stale: true` (yellow banner / OLDER DATA chip on the pages). Parser drift
   throws `PARSE_FAILED` — recapture fixtures, fix `src/parse.ts`, redeploy.
-- **Rotating the Chelsea password:** update it on the Chelsea site, then
-  `npx wrangler secret put CHELSEA_PASSWORD` and re-deploy is *not* required —
-  secret changes restart the Worker automatically.
+- **Rotating the Chelsea password:** update it on the Chelsea site, then update
+  `CHELSEA_PASSWORD` (and `CHELSEA_MEMBER` if the account changed) in **both**
+  places — `npx wrangler secret put CHELSEA_PASSWORD` for the Worker and
+  `npx wrangler pages secret put CHELSEA_PASSWORD --project-name schh-tennis`
+  for Pages — then run `npm run deploy:all` (Pages only picks up secret changes
+  on a new deployment). A step-by-step, dashboard-based version for
+  non-developers is in [ADMINISTRATION.md](ADMINISTRATION.md) §3.
 - **Kill switch:** `npx wrangler delete` removes the Worker (KV data persists
   until the namespace is deleted separately).
 
@@ -111,3 +117,21 @@ GitHub: https://github.com/rsnyder/schh-tennis (public), branch `main`.
 Pushes do **not** deploy — deploys are always explicit `wrangler deploy` runs.
 Nothing secret lives in the repo: credentials are in Worker secrets/.dev.vars,
 and member-name-bearing fixtures are gitignored.
+
+## Handoff-sensitive items
+
+Things tied to the current owner/account that must be revisited on a handoff:
+
+- **Cloudflare account** (`f9a486f2…`) owns the Worker, Pages project, KV
+  namespace, secrets and Web Analytics site. Add the new maintainer as a member,
+  or redo "First-time setup on a new account" (KV id changes must be pasted into
+  both `wrangler.jsonc` and `pages/wrangler.jsonc`).
+- **Chelsea credentials** exist as four secrets (Worker + Pages × member/password)
+  plus the developer's local `.dev.vars`.
+- **Web Analytics token** is hard-coded in `src/analytics.ts`; a new account
+  needs its own token (or set it to `""` to disable tracking).
+- **QR code** on the TV is a static SVG in `src/signage.ts` (`HEADER_QR_HTML`);
+  regenerate it if the public URL changes.
+- **Chelsea-specific code** is isolated to `src/chelsea.ts`, `src/parse.ts`,
+  `src/parse-welcome.ts` and the "Reserve" links (`grep chelseareservations src`)
+  — see the CourtReserve discussion in the top-level README.
