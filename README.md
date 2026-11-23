@@ -114,6 +114,7 @@ account, no cost).
 | **Gentle on Chelsea** | About 4 logins an hour during the day, only between ~7 am and 9 pm. |
 | **Read-only and private** | No bookings, no member accounts, no personal data stored. Usage statistics use Cloudflare's cookieless page-view counter (mobile pages only; the TVs are not counted). |
 | **Eastern-time aware** | "Today" and "now" always mean Hilton Head local time, regardless of where the viewer or server is. |
+| **No AI services** | The running site makes no AI/LLM API calls and has no AI keys, accounts, or usage bills. Court sheets are read with ordinary, deterministic code. (The project was built with the help of an AI coding assistant, but nothing in production depends on one.) The only outside services it contacts are Chelsea and Cloudflare. |
 | **Machine-readable data** | The same data is available as JSON at `/api/courtsheet` for any future tool. |
 
 ## 3. How it works (the 60-second version)

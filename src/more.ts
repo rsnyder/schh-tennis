@@ -12,6 +12,11 @@ export const MORE_HTML = `<!doctype html>
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1f5c2c">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SCHH Tennis">
 ${ANALYTICS_TAG}
 <style>
   :root {

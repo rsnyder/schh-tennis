@@ -7,7 +7,8 @@ describe("HOME_HTML", () => {
     expect(HOME_HTML.trim().endsWith("</html>")).toBe(true);
     expect(HOME_HTML).toContain('<meta name="robots" content="noindex">');
     expect(HOME_HTML).toContain('<meta name="viewport"');
-    expect(HOME_HTML).toContain("🎾");
+    expect(HOME_HTML).toContain('rel="apple-touch-icon" href="/icons/apple-touch-icon.png"');
+    expect(HOME_HTML).toContain('rel="icon" type="image/png" href="/icons/icon-192.png"');
   });
 
   it("matches page.ts's PWA head bits exactly", () => {

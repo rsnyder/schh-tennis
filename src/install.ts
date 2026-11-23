@@ -11,6 +11,11 @@ export const INSTALL_HTML = `<!doctype html>
 <link rel="icon" href="/icons/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1f5c2c">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SCHH Tennis">
 ${ANALYTICS_TAG}
 <style>
   :root {
@@ -128,9 +133,10 @@ ${ANALYTICS_TAG}
 <section id="iosSection">
   <h2>iPhone &amp; iPad (Safari)<span class="your-device" id="iosBadge" style="display:none">Your device</span></h2>
   <ol>
-    <li>Open this page in <b>Safari</b> (installing doesn't work from Chrome or other browsers on iPhone).</li>
-    <li>Tap the <b>&#8943;</b> three-dot button at the bottom of the screen, then tap <b>Share</b> (the square with an arrow). On iPhones with the older Safari layout, the Share button sits directly at the bottom center instead.</li>
-    <li>Scroll down the share menu and tap <b>Add to Home Screen</b>.</li>
+    <li>Open this page in <b>Safari</b> (other iPhone browsers may also offer Add to Home Screen, but Safari is the most reliable).</li>
+    <li>Tap the <b>Share</b> button (the square with an arrow). Depending on your Safari layout it is either in the bottom bar, or under the <b>&#8943;</b> three-dot button &mdash; tap <b>&#8943;</b> first, then <b>Share</b>.</li>
+    <li>Scroll down the share menu and tap <b>Add to Home Screen</b>. (If you don't see it, scroll to the bottom, tap <b>Edit Actions</b>, and add it.)</li>
+    <li>Leave <b>Open as Web App</b> switched <b>on</b> so it opens full screen like an app.</li>
     <li>Tap <b>Add</b> in the top-right corner.</li>
   </ol>
   <p class="note">The SCHH Tennis icon appears on your home screen. Opening it shows the court sheet full screen, without Safari's address bar.</p>
